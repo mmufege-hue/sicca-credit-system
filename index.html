@@ -1,0 +1,1303 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SICCA - Sistema Inteligente de Crédito Corporativo Angola</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e1a;--bg2:#111827;--bg3:#1a2235;--bg4:#1e2d45;
+  --border:#2a3a55;--border2:#3a4f70;
+  --text:#e8edf5;--text2:#8fa3c0;--text3:#5a7099;
+  --navy:#1b2d4f;--blue:#2563eb;--blue2:#3b82f6;--blue3:#60a5fa;
+  --gold:#d4a017;--gold2:#f0b429;--gold3:#fcd34d;
+  --green:#059669;--green2:#10b981;--green3:#34d399;
+  --red:#dc2626;--red2:#ef4444;--red3:#f87171;
+  --amber:#d97706;--amber2:#f59e0b;--amber3:#fcd34d;
+  --purple:#7c3aed;--purple2:#8b5cf6;--purple3:#a78bfa;
+  --teal:#0d9488;--teal2:#14b8a6;--teal3:#5eead4;
+  --radius:8px;--radius-lg:12px;
+}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:13px;min-height:100vh;overflow-x:hidden}
+
+/* NAV */
+.topbar{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border-bottom:1px solid var(--border);padding:0 20px;height:52px;position:sticky;top:0;z-index:100}
+.logo{display:flex;align-items:center;gap:10px}
+.logo-icon{width:32px;height:32px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff}
+.logo-text{font-size:14px;font-weight:600;color:var(--text)}
+.logo-sub{font-size:10px;color:var(--text3);letter-spacing:.5px}
+.nav-tabs{display:flex;gap:2px}
+.nav-tab{padding:6px 12px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:500;color:var(--text2);transition:all .2s;border:none;background:none;white-space:nowrap}
+.nav-tab:hover{background:var(--bg3);color:var(--text)}
+.nav-tab.active{background:var(--blue);color:#fff}
+.topbar-right{display:flex;align-items:center;gap:10px}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--green2)}
+.status-text{font-size:11px;color:var(--text3)}
+
+/* SECTIONS */
+.section{display:none;padding:20px;min-height:calc(100vh - 52px)}
+.section.active{display:block}
+
+/* UPLOAD AREA */
+.upload-zone{border:2px dashed var(--border2);border-radius:var(--radius-lg);padding:40px;text-align:center;background:var(--bg3);cursor:pointer;transition:all .3s;margin-bottom:20px}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--blue2);background:rgba(37,99,235,.08)}
+.upload-icon{font-size:40px;margin-bottom:12px;opacity:.6}
+.upload-title{font-size:16px;font-weight:600;margin-bottom:6px}
+.upload-sub{font-size:12px;color:var(--text3);margin-bottom:16px}
+.upload-types{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.type-badge{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:600;border:1px solid var(--border2);color:var(--text2)}
+.btn{padding:8px 16px;border-radius:var(--radius);border:none;cursor:pointer;font-size:12px;font-weight:600;transition:all .2s}
+.btn-primary{background:var(--blue);color:#fff}
+.btn-primary:hover{background:#1d4ed8}
+.btn-gold{background:var(--gold);color:#1a1200}
+.btn-gold:hover{background:var(--gold2)}
+.btn-outline{background:transparent;color:var(--text2);border:1px solid var(--border2)}
+.btn-outline:hover{background:var(--bg3);color:var(--text)}
+.btn-sm{padding:5px 10px;font-size:11px}
+.btn-danger{background:var(--red);color:#fff}
+
+/* GRID */
+.grid{display:grid;gap:16px}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+.grid-5{grid-template-columns:repeat(5,1fr)}
+
+/* CARDS */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+.card-title{font-size:12px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px}
+.card-value{font-size:24px;font-weight:700;color:var(--text)}
+.card-sub{font-size:11px;color:var(--text3);margin-top:3px}
+
+/* KPI CARDS */
+.kpi{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:14px}
+.kpi-label{font-size:10px;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px}
+.kpi-value{font-size:20px;font-weight:700}
+.kpi-delta{font-size:10px;margin-top:4px}
+.kpi.good .kpi-value{color:var(--green2)}
+.kpi.warn .kpi-value{color:var(--amber2)}
+.kpi.bad .kpi-value{color:var(--red2)}
+.kpi.info .kpi-value{color:var(--blue3)}
+.kpi.purple .kpi-value{color:var(--purple2)}
+
+/* SECTION TITLES */
+.section-title{font-size:18px;font-weight:700;color:var(--text);margin-bottom:4px}
+.section-sub{font-size:12px;color:var(--text3);margin-bottom:20px}
+.module-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.module-badge{background:var(--blue);color:#fff;font-size:9px;font-weight:700;padding:2px 6px;border-radius:4px}
+
+/* TABLES */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th{background:var(--bg3);color:var(--text2);font-weight:600;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);font-size:10px;text-transform:uppercase;letter-spacing:.5px}
+td{padding:8px 12px;border-bottom:1px solid var(--border);color:var(--text)}
+tr:hover td{background:rgba(255,255,255,.02)}
+tr:last-child td{border-bottom:none}
+
+/* RATING / SCORE */
+.score-gauge{position:relative;width:140px;height:80px;margin:0 auto}
+.rating-badge{display:inline-flex;align-items:center;justify-content:center;width:48px;height:48px;border-radius:50%;font-size:14px;font-weight:700;border:3px solid}
+.rating-AAA,.rating-AA,.rating-A{color:var(--green2);border-color:var(--green2)}
+.rating-BBB,.rating-BB{color:var(--amber2);border-color:var(--amber2)}
+.rating-B,.rating-CCC{color:var(--amber);border-color:var(--amber)}
+.rating-CC,.rating-C,.rating-D{color:var(--red2);border-color:var(--red2)}
+
+/* DECISION BANNER */
+.decision-banner{border-radius:var(--radius-lg);padding:20px 24px;margin-bottom:20px;display:flex;align-items:center;gap:16px}
+.decision-banner.approved{background:rgba(5,150,105,.15);border:1px solid rgba(16,185,129,.3)}
+.decision-banner.conditional{background:rgba(217,119,6,.15);border:1px solid rgba(245,158,11,.3)}
+.decision-banner.rejected{background:rgba(220,38,38,.15);border:1px solid rgba(239,68,68,.3)}
+.decision-icon{font-size:36px}
+.decision-title{font-size:22px;font-weight:700}
+.decision-banner.approved .decision-title{color:var(--green2)}
+.decision-banner.conditional .decision-title{color:var(--amber2)}
+.decision-banner.rejected .decision-title{color:var(--red2)}
+
+/* STAGE BADGES */
+.stage1{background:rgba(5,150,105,.2);color:var(--green2);border:1px solid rgba(16,185,129,.3)}
+.stage2{background:rgba(217,119,6,.2);color:var(--amber2);border:1px solid rgba(245,158,11,.3)}
+.stage3{background:rgba(220,38,38,.2);color:var(--red2);border:1px solid rgba(239,68,68,.3)}
+.stage-badge{display:inline-block;padding:3px 8px;border-radius:4px;font-size:10px;font-weight:700}
+
+/* PROGRESS */
+.progress-bar{height:6px;border-radius:3px;background:var(--bg3);overflow:hidden;margin-top:6px}
+.progress-fill{height:100%;border-radius:3px;transition:width .6s ease}
+
+/* RISK INDICATOR */
+.risk-dot{width:10px;height:10px;border-radius:50%;display:inline-block;margin-right:6px}
+.risk-low{background:var(--green2)}
+.risk-med{background:var(--amber2)}
+.risk-high{background:var(--red2)}
+
+/* SEMAPHORE */
+.semaphore{display:flex;flex-direction:column;gap:8px;align-items:center}
+.sem-light{width:32px;height:32px;border-radius:50%;border:2px solid;transition:all .3s}
+.sem-green{border-color:var(--green2)}
+.sem-amber{border-color:var(--amber2)}
+.sem-red{border-color:var(--red2)}
+.sem-on.sem-green{background:var(--green2);box-shadow:0 0 10px var(--green2)}
+.sem-on.sem-amber{background:var(--amber2);box-shadow:0 0 10px var(--amber2)}
+.sem-on.sem-red{background:var(--red2);box-shadow:0 0 10px var(--red2)}
+
+/* TABS inside section */
+.inner-tabs{display:flex;gap:4px;margin-bottom:16px;background:var(--bg3);padding:4px;border-radius:var(--radius);width:fit-content}
+.inner-tab{padding:5px 12px;border-radius:6px;cursor:pointer;font-size:11px;font-weight:500;color:var(--text3);border:none;background:none;transition:all .2s}
+.inner-tab.active{background:var(--bg2);color:var(--text);box-shadow:0 1px 3px rgba(0,0,0,.3)}
+
+/* FX */
+.fx-arrow{color:var(--text3);font-size:10px}
+.ccy-pair{font-family:monospace;font-size:12px;font-weight:600}
+
+/* FORM */
+.form-group{margin-bottom:14px}
+.form-label{font-size:11px;color:var(--text3);margin-bottom:5px;display:block;font-weight:500}
+.form-input{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--radius);font-size:12px;outline:none}
+.form-input:focus{border-color:var(--blue)}
+.form-select{width:100%;background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:var(--radius);font-size:12px;outline:none}
+
+/* SCROLL */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
+
+/* ALERT */
+.alert{padding:10px 14px;border-radius:var(--radius);margin-bottom:10px;display:flex;gap:10px;align-items:flex-start;font-size:12px}
+.alert-warn{background:rgba(217,119,6,.15);border:1px solid rgba(245,158,11,.25);color:#fcd34d}
+.alert-danger{background:rgba(220,38,38,.12);border:1px solid rgba(239,68,68,.25);color:var(--red3)}
+.alert-info{background:rgba(37,99,235,.12);border:1px solid rgba(59,130,246,.25);color:var(--blue3)}
+.alert-success{background:rgba(5,150,105,.12);border:1px solid rgba(16,185,129,.25);color:var(--green3)}
+.alert-icon{font-size:14px;flex-shrink:0;margin-top:1px}
+
+/* MATRIX */
+.matrix-cell{padding:8px 6px;text-align:center;border-radius:4px;font-size:10px;font-weight:600;cursor:pointer;transition:all .2s}
+.matrix-cell:hover{opacity:.8}
+
+/* DELEGATION TABLE */
+.power-row-low td{color:var(--green3)}
+.power-row-med td{color:var(--amber3)}
+.power-row-high td{color:var(--red3)}
+
+/* CHART containers */
+.chart-wrap{position:relative;height:220px}
+.chart-wrap-sm{position:relative;height:160px}
+
+/* WATERFALL */
+.waterfall-bar{display:flex;align-items:flex-end;gap:4px;height:120px;padding-top:10px}
+.w-bar{display:flex;flex-direction:column;align-items:center;gap:3px;flex:1}
+.w-bar-fill{width:100%;border-radius:3px 3px 0 0;min-height:4px;transition:height .6s}
+.w-label{font-size:9px;color:var(--text3);text-align:center}
+.w-value{font-size:9px;font-weight:600;color:var(--text)}
+
+/* RADAR label */
+.radar-legend{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
+.radar-item{font-size:10px;color:var(--text3);display:flex;align-items:center;gap:4px}
+.radar-dot{width:8px;height:8px;border-radius:2px}
+
+/* TAG */
+.tag{display:inline-block;padding:2px 7px;border-radius:4px;font-size:10px;font-weight:600;margin:2px}
+.tag-blue{background:rgba(37,99,235,.2);color:var(--blue3)}
+.tag-green{background:rgba(5,150,105,.2);color:var(--green3)}
+.tag-amber{background:rgba(217,119,6,.2);color:var(--amber3)}
+.tag-red{background:rgba(220,38,38,.2);color:var(--red3)}
+.tag-purple{background:rgba(124,58,237,.2);color:var(--purple3)}
+.tag-teal{background:rgba(13,148,136,.2);color:var(--teal3)}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--border);margin:16px 0}
+
+/* CONCENTRATION BAR */
+.conc-bar{display:flex;height:24px;border-radius:4px;overflow:hidden;margin:8px 0}
+.conc-seg{display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#fff;transition:flex .4s;min-width:2%}
+
+/* MEMO */
+.memo{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;max-width:800px}
+.memo-header{border-bottom:2px solid var(--gold);padding-bottom:16px;margin-bottom:20px}
+.memo-bank{font-size:18px;font-weight:700;color:var(--gold2);letter-spacing:1px}
+.memo-title{font-size:13px;color:var(--text2);margin-top:4px}
+.memo-meta{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:20px}
+.meta-item{background:var(--bg3);padding:8px 12px;border-radius:var(--radius)}
+.meta-key{font-size:10px;color:var(--text3);margin-bottom:2px}
+.meta-val{font-size:12px;font-weight:600;color:var(--text)}
+.memo-section{margin-bottom:18px}
+.memo-section-title{font-size:11px;font-weight:700;color:var(--gold2);text-transform:uppercase;letter-spacing:.8px;border-left:3px solid var(--gold2);padding-left:8px;margin-bottom:10px}
+.memo-text{font-size:12px;color:var(--text2);line-height:1.8}
+.memo-condition{padding:8px 12px;background:var(--bg3);border-left:3px solid var(--amber2);border-radius:0 4px 4px 0;margin-bottom:6px;font-size:12px;color:var(--text2)}
+
+/* PRINT */
+@media print{body{background:#fff;color:#000}.topbar{display:none}.section.active{padding:0}}
+
+/* ANIMATED PULSE */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+.pulsing{animation:pulse 2s infinite}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">
+    <div class="logo-icon">BCA</div>
+    <div>
+      <div class="logo-text">SICCA — Sistema Inteligente de Crédito Corporativo Angola</div>
+      <div class="logo-sub">MOTOR DE DECISÃO BANCÁRIA · IFRS 9 · BASILEIA III · BNA</div>
+    </div>
+  </div>
+  <div class="nav-tabs" id="mainNav">
+    <button class="nav-tab active" onclick="showSection('upload')">📁 Instrução</button>
+    <button class="nav-tab" onclick="showSection('dashboard')">📊 Dashboard</button>
+    <button class="nav-tab" onclick="showSection('financeiro')">📈 Análise Financeira</button>
+    <button class="nav-tab" onclick="showSection('risco')">⚠️ Risco & Rating</button>
+    <button class="nav-tab" onclick="showSection('ifrs9')">🏛 IFRS 9 / ECL</button>
+    <button class="nav-tab" onclick="showSection('garantias')">🔒 Garantias</button>
+    <button class="nav-tab" onclick="showSection('cambial')">💱 Análise Cambial</button>
+    <button class="nav-tab" onclick="showSection('concentracao')">🗂 Concentração</button>
+    <button class="nav-tab" onclick="showSection('comite')">🏦 Comité</button>
+    <button class="nav-tab" onclick="showSection('memorando')">📋 Memorando</button>
+  </div>
+  <div class="topbar-right">
+    <div class="status-dot pulsing"></div>
+    <span class="status-text">Sistema Activo · v4.2</span>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECÇÃO 1: INSTRUÇÃO ═══════════════════ -->
+<div class="section active" id="s-upload">
+  <div class="section-title">Instrução do Processo de Crédito</div>
+  <div class="section-sub">Carregue os documentos da empresa para análise automática pelo motor de crédito.</div>
+
+  <div class="grid grid-2" style="gap:20px;margin-bottom:20px">
+    <div>
+      <div class="upload-zone" id="uploadZone" onclick="triggerUpload()" ondragover="dragOver(event)" ondrop="dropFile(event)">
+        <div class="upload-icon">📂</div>
+        <div class="upload-title">Carregar Documentos</div>
+        <div class="upload-sub">Arraste ficheiros ou clique para seleccionar</div>
+        <div class="upload-types">
+          <span class="type-badge">XLSX</span>
+          <span class="type-badge">CSV</span>
+          <span class="type-badge">PDF</span>
+          <span class="type-badge">DOCX</span>
+          <span class="type-badge">TXT</span>
+        </div>
+        <input type="file" id="fileInput" multiple accept=".xlsx,.csv,.pdf,.docx,.txt" style="display:none" onchange="handleFiles(event)">
+      </div>
+      <div id="fileList"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px">Dados da Empresa</div>
+      <div class="grid grid-2" style="gap:10px">
+        <div class="form-group">
+          <label class="form-label">Empresa / Mutuário</label>
+          <input class="form-input" id="f-empresa" value="SONANGRO DISTRIBUIDORA, S.A." placeholder="Nome da empresa">
+        </div>
+        <div class="form-group">
+          <label class="form-label">NIF Angola</label>
+          <input class="form-input" id="f-nif" value="5000187654" placeholder="NIF">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Sector de Actividade</label>
+          <select class="form-select" id="f-sector">
+            <option value="agricola">Agricultura / Agroindustrial</option>
+            <option value="petroleo">Petróleo e Gás</option>
+            <option value="construcao">Construção</option>
+            <option value="comercio" selected>Comércio / Distribuição</option>
+            <option value="logistica">Logística</option>
+            <option value="telecomunicacoes">Telecomunicações</option>
+            <option value="energia">Energia</option>
+            <option value="industria">Indústria</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Grupo Económico</label>
+          <input class="form-input" id="f-grupo" value="GRUPO ATLÂNTICO ANGOLA" placeholder="Grupo">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Montante Solicitado (AOA Mio)</label>
+          <input class="form-input" id="f-montante" type="number" value="4500" placeholder="Ex: 5000">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Moeda da Operação</label>
+          <select class="form-select" id="f-moeda">
+            <option value="AOA">AOA — Kwanza</option>
+            <option value="USD">USD — Dólar</option>
+            <option value="EUR">EUR — Euro</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Prazo (meses)</label>
+          <input class="form-input" id="f-prazo" type="number" value="60" placeholder="Ex: 36">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Finalidade</label>
+          <select class="form-select" id="f-finalidade">
+            <option value="investimento">Investimento / CAPEX</option>
+            <option value="fundo" selected>Fundo de Maneio</option>
+            <option value="refinanciamento">Refinanciamento</option>
+            <option value="trade">Trade Finance</option>
+          </select>
+        </div>
+      </div>
+      <button class="btn btn-gold" style="width:100%;margin-top:8px;font-size:13px;padding:10px" onclick="runAnalysis()">
+        ⚡ INICIAR ANÁLISE AUTOMÁTICA COMPLETA
+      </button>
+    </div>
+  </div>
+
+  <div class="grid grid-3" style="gap:12px">
+    <div class="card">
+      <div class="module-title"><span class="module-badge">M1</span>Extracção Inteligente</div>
+      <div style="font-size:11px;color:var(--text3);line-height:1.7">
+        Leitura automática de balanços, DR, fluxos de caixa e balancetes. Identificação de contas, moedas e períodos. Alerta de inconsistências contabilísticas.
+      </div>
+    </div>
+    <div class="card">
+      <div class="module-title"><span class="module-badge">M2</span>Análise Financeira</div>
+      <div style="font-size:11px;color:var(--text3);line-height:1.7">
+        Cálculo automático de 20+ rácios. Liquidez, endividamento, rentabilidade, cobertura, eficiência. Interpretação contextualizada por sector.
+      </div>
+    </div>
+    <div class="card">
+      <div class="module-title"><span class="module-badge">M3–M10</span>Motor Completo</div>
+      <div style="font-size:11px;color:var(--text3);line-height:1.7">
+        Rating interno · Score de crédito · PD/LGD/EAD · IFRS 9 ECL · Análise cambial · Concentração · Comité · Memorando.
+      </div>
+    </div>
+  </div>
+
+  <div id="demo-alert" style="display:none;margin-top:16px">
+    <div class="alert alert-success">
+      <span class="alert-icon">✅</span>
+      <div><strong>Análise concluída.</strong> Navegue pelas secções acima para consultar todos os resultados. O memorando de crédito está disponível na última aba.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECÇÃO 2: DASHBOARD ═══════════════════ -->
+<div class="section" id="s-dashboard">
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+    <div>
+      <div class="section-title" id="d-empresa-name">SONANGRO DISTRIBUIDORA, S.A.</div>
+      <div class="section-sub" id="d-empresa-sub">Comércio / Distribuição · Análise: <span id="d-date"></span></div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Imprimir</button>
+      <button class="btn btn-outline btn-sm" onclick="exportExcel()">📊 Excel</button>
+      <button class="btn btn-primary btn-sm" onclick="showSection('memorando')">📋 Memorando</button>
+    </div>
+  </div>
+
+  <!-- DECISION BANNER -->
+  <div class="decision-banner conditional" id="decisionBanner">
+    <div class="decision-icon">⚠️</div>
+    <div>
+      <div class="decision-title" id="decisionText">APROVADO COM CONDIÇÕES</div>
+      <div style="font-size:12px;color:var(--text2);margin-top:4px" id="decisionSub">Score: 67/100 · Rating BBB · PD: 3,2% · Garantias Adequadas · Requer reforço de garantias e covenants financeiros</div>
+    </div>
+    <div style="margin-left:auto;text-align:right">
+      <div style="font-size:10px;color:var(--text3)">LIMITE APROVADO</div>
+      <div style="font-size:22px;font-weight:700;color:var(--gold2)" id="d-limite">AOA 3.800 Mio</div>
+      <div style="font-size:10px;color:var(--text3)" id="d-prazo-text">60 meses · Fundo de Maneio</div>
+    </div>
+  </div>
+
+  <!-- KPIs ROW 1 -->
+  <div class="grid grid-5" style="gap:10px;margin-bottom:12px">
+    <div class="kpi info">
+      <div class="kpi-label">Score de Crédito</div>
+      <div class="kpi-value">67<span style="font-size:12px">/100</span></div>
+      <div class="kpi-delta" style="color:var(--amber2)">▲ Risco Moderado</div>
+    </div>
+    <div class="kpi warn">
+      <div class="kpi-label">Rating Interno</div>
+      <div class="kpi-value">BBB</div>
+      <div class="kpi-delta" style="color:var(--text3)">Investment Grade</div>
+    </div>
+    <div class="kpi warn">
+      <div class="kpi-label">PD (Prob. Incumprimento)</div>
+      <div class="kpi-value">3,2%</div>
+      <div class="kpi-delta" style="color:var(--text3)">Moderado</div>
+    </div>
+    <div class="kpi good">
+      <div class="kpi-label">ECL (IFRS 9)</div>
+      <div class="kpi-value">AOA 144M</div>
+      <div class="kpi-delta" style="color:var(--text3)">Stage 1 → 2</div>
+    </div>
+    <div class="kpi purple">
+      <div class="kpi-label">Delegação de Poderes</div>
+      <div class="kpi-value" style="font-size:13px">Comité Central</div>
+      <div class="kpi-delta" style="color:var(--text3)">Nível 3 — CA</div>
+    </div>
+  </div>
+
+  <!-- KPIs ROW 2 -->
+  <div class="grid grid-5" style="gap:10px;margin-bottom:16px">
+    <div class="kpi good">
+      <div class="kpi-label">Liquidez Corrente</div>
+      <div class="kpi-value">1,45x</div>
+      <div class="kpi-delta" style="color:var(--amber2)">⚠ Benchmark: >1,5x</div>
+    </div>
+    <div class="kpi warn">
+      <div class="kpi-label">Leverage (Dív/EBITDA)</div>
+      <div class="kpi-value">2,27x</div>
+      <div class="kpi-delta" style="color:var(--green2)">✓ Aceitável &lt;3,5x</div>
+    </div>
+    <div class="kpi good">
+      <div class="kpi-label">DSCR</div>
+      <div class="kpi-value">1,50x</div>
+      <div class="kpi-delta" style="color:var(--green2)">✓ Min: 1,25x</div>
+    </div>
+    <div class="kpi info">
+      <div class="kpi-label">LTV Garantias</div>
+      <div class="kpi-value">72%</div>
+      <div class="kpi-delta" style="color:var(--amber2)">⚠ Max: 70%</div>
+    </div>
+    <div class="kpi warn">
+      <div class="kpi-label">Exp. USD/Total</div>
+      <div class="kpi-value">38%</div>
+      <div class="kpi-delta" style="color:var(--amber2)">⚠ Risco Cambial</div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW -->
+  <div class="grid grid-3" style="gap:14px;margin-bottom:14px">
+    <div class="card">
+      <div class="card-title">Radar de Risco</div>
+      <div class="chart-wrap"><canvas id="radarChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Tendência Financeira (3 anos)</div>
+      <div class="chart-wrap"><canvas id="trendChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Estrutura de Capital</div>
+      <div class="chart-wrap"><canvas id="capitalChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- SEMAPHORE + HEATMAP -->
+  <div class="grid grid-2" style="gap:14px">
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px">Semáforo de Crédito</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;text-align:center">
+        <div>
+          <div class="semaphore">
+            <div class="sem-light sem-green"></div>
+            <div class="sem-light sem-amber sem-on"></div>
+            <div class="sem-light sem-red"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px">Liquidez</div>
+          <div style="font-size:11px;color:var(--amber2);font-weight:600">Atenção</div>
+        </div>
+        <div>
+          <div class="semaphore">
+            <div class="sem-light sem-green sem-on"></div>
+            <div class="sem-light sem-amber"></div>
+            <div class="sem-light sem-red"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px">Endividamento</div>
+          <div style="font-size:11px;color:var(--green2);font-weight:600">Favorável</div>
+        </div>
+        <div>
+          <div class="semaphore">
+            <div class="sem-light sem-green sem-on"></div>
+            <div class="sem-light sem-amber"></div>
+            <div class="sem-light sem-red"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px">Rentabilidade</div>
+          <div style="font-size:11px;color:var(--green2);font-weight:600">Favorável</div>
+        </div>
+        <div>
+          <div class="semaphore">
+            <div class="sem-light sem-green"></div>
+            <div class="sem-light sem-amber sem-on"></div>
+            <div class="sem-light sem-red"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px">Garantias</div>
+          <div style="font-size:11px;color:var(--amber2);font-weight:600">Atenção</div>
+        </div>
+        <div>
+          <div class="semaphore">
+            <div class="sem-light sem-green"></div>
+            <div class="sem-light sem-amber sem-on"></div>
+            <div class="sem-light sem-red"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px">Risco Cambial</div>
+          <div style="font-size:11px;color:var(--amber2);font-weight:600">Atenção</div>
+        </div>
+        <div>
+          <div class="semaphore">
+            <div class="sem-light sem-green sem-on"></div>
+            <div class="sem-light sem-amber"></div>
+            <div class="sem-light sem-red"></div>
+          </div>
+          <div style="font-size:10px;color:var(--text3);margin-top:6px">Cobertura Dívida</div>
+          <div style="font-size:11px;color:var(--green2);font-weight:600">Favorável</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">Heatmap de Indicadores</div>
+      <div id="heatmap"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECÇÃO 3: ANÁLISE FINANCEIRA ═══════════════════ -->
+<div class="section" id="s-financeiro">
+  <div class="section-title">Análise Financeira Automática</div>
+  <div class="section-sub">Rácios calculados com base nas demonstrações financeiras extraídas. Comparação com benchmarks sectoriais Angola.</div>
+
+  <div class="alert alert-warn">
+    <span class="alert-icon">⚠️</span>
+    <div><strong>Alerta de Consistência:</strong> Liquidez corrente (1,45x) abaixo do benchmark sectorial para Comércio/Distribuição Angola (1,60x). Caixa e equivalentes representam apenas 3,9% do activo corrente — risco de liquidez imediata.</div>
+  </div>
+
+  <div class="grid grid-2" style="gap:14px;margin-bottom:14px">
+    <div class="card">
+      <div class="module-title"><span class="module-badge">LIQUIDEZ</span>Rácios de Liquidez</div>
+      <table>
+        <thead><tr><th>Indicador</th><th>Fórmula</th><th>Valor</th><th>Benchmark</th><th>Status</th></tr></thead>
+        <tbody id="tbl-liquidez"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="module-title"><span class="module-badge">ENDIVIDAMENTO</span>Rácios de Endividamento</div>
+      <table>
+        <thead><tr><th>Indicador</th><th>Fórmula</th><th>Valor</th><th>Benchmark</th><th>Status</th></tr></thead>
+        <tbody id="tbl-endividamento"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="gap:14px;margin-bottom:14px">
+    <div class="card">
+      <div class="module-title"><span class="module-badge">RENTABILIDADE</span>Rácios de Rentabilidade</div>
+      <table>
+        <thead><tr><th>Indicador</th><th>Fórmula</th><th>Valor</th><th>Benchmark</th><th>Status</th></tr></thead>
+        <tbody id="tbl-rentabilidade"></tbody>
+      </table>
+    </div>
+    <div class="card">
+      <div class="module-title"><span class="module-badge">EFICIÊNCIA</span>Ciclo Operacional & Cobertura</div>
+      <table>
+        <thead><tr><th>Indicador</th><th>Fórmula</th><th>Valor</th><th>Benchmark</th><th>Status</th></tr></thead>
+        <tbody id="tbl-eficiencia"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="module-title"><span class="module-badge">WATERFALL</span>Demonstração de Resultados — Cascata (AOA Mio)</div>
+    <div id="waterfall-chart"></div>
+    <div class="alert alert-info" style="margin-top:12px">
+      <span class="alert-icon">💡</span>
+      <div><strong>Interpretação:</strong> EBITDA de AOA 1.730 Mio corresponde a uma margem de 17,6% — abaixo do benchmark do sector de distribuição em Angola (21%). A deterioração face ao ano anterior (-3,8pp) é principalmente explicada pelo aumento do CMVMC (+27,6%) impulsionado pela desvalorização do AOA e pressão inflacionista.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECÇÃO 4: RISCO & RATING ═══════════════════ -->
+<div class="section" id="s-risco">
+  <div class="section-title">Risco de Crédito — Rating & Score</div>
+  <div class="section-sub">Modelo interno de scoring baseado em 5 pilares ponderados. Rating calibrado com escala Moody's/S&P adaptada ao mercado angolano.</div>
+
+  <div class="grid grid-3" style="gap:14px;margin-bottom:14px">
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="margin-bottom:16px">Score Final</div>
+      <div style="font-size:56px;font-weight:700;color:var(--amber2)">67</div>
+      <div style="font-size:14px;color:var(--text3);margin-bottom:12px">de 100 pontos</div>
+      <div class="progress-bar" style="height:12px"><div class="progress-fill" style="width:67%;background:var(--amber2)"></div></div>
+      <div style="display:flex;justify-content:space-between;font-size:9px;color:var(--text3);margin-top:4px"><span>0</span><span>25</span><span>50</span><span>75</span><span>100</span></div>
+      <div style="margin-top:14px;font-size:11px;color:var(--text2)">Faixa: <strong>60-74</strong> → Risco Moderado-Baixo</div>
+    </div>
+
+    <div class="card" style="text-align:center">
+      <div class="card-title" style="margin-bottom:16px">Rating Interno</div>
+      <div style="display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:12px">
+        <div class="rating-badge rating-BBB" style="width:64px;height:64px;font-size:18px">BBB</div>
+      </div>
+      <div style="font-size:12px;color:var(--amber2);font-weight:600;margin-bottom:8px">Investment Grade — Risco Moderado</div>
+      <div style="font-size:11px;color:var(--text3);line-height:1.6">Empresa com fundamentos financeiros sólidos mas com vulnerabilidades que requerem monitorização. Aprovação condicionada a garantias e covenants.</div>
+      <div style="margin-top:10px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap">
+        <span class="tag tag-green">AAA</span><span class="tag tag-green">AA</span><span class="tag tag-green">A</span>
+        <span class="tag tag-amber" style="outline:2px solid var(--amber2)">BBB</span><span class="tag tag-amber">BB</span>
+        <span class="tag tag-red">B</span><span class="tag tag-red">CCC</span><span class="tag tag-red">CC</span><span class="tag tag-red">C</span><span class="tag tag-red">D</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:14px">Decomposição do Score</div>
+      <div id="score-breakdown"></div>
+    </div>
+  </div>
+
+  <!-- PD / LGD / EAD -->
+  <div class="grid grid-3" style="gap:14px;margin-bottom:14px">
+    <div class="card">
+      <div class="module-title"><span class="module-badge">PD</span>Probabilidade de Incumprimento</div>
+      <div style="font-size:28px;font-weight:700;color:var(--amber2);margin-bottom:8px">3,20%</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Horizonte: 12 meses · Modelo Logístico + Scoring</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:32%;background:var(--amber2)"></div></div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.6">Calculada com base em: rácios financeiros (60%), historial bancário (25%) e sector/macroeconómico Angola (15%). Banda de confiança: [2,1% – 4,8%]</div>
+    </div>
+    <div class="card">
+      <div class="module-title"><span class="module-badge">LGD</span>Perda em Caso de Incumprimento</div>
+      <div style="font-size:28px;font-weight:700;color:var(--amber2);margin-bottom:8px">42%</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Após recuperação de garantias (hipoteca + penhor)</div>
+      <div class="progress-bar"><div class="progress-fill" style="width:42%;background:var(--amber2)"></div></div>
+      <div style="margin-top:10px;font-size:11px;color:var(--text2);line-height:1.6">Garantia real: imóvel comercial em Luanda (LTV 72%). Desconto de recuperação judicial estimado em 35-40%. Prazo médio de recuperação: 36 meses em Angola.</div>
+    </div>
+    <div class="card">
+      <div class="module-title"><span class="module-badge">EAD / ECL</span>Exposição &amp; Perda Esperada</div>
+      <div style="font-size:28px;font-weight:700;color:var(--red2);margin-bottom:8px">AOA 144M</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">EL = PD × LGD × EAD</div>
+      <div style="background:var(--bg3);border-radius:6px;padding:12px;font-size:11px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text3)">PD</span><span>3,20%</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text3)">LGD</span><span>42,00%</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:6px"><span style="color:var(--text3)">EAD</span><span>AOA 4.500M</span></div>
+        <div class="divider" style="margin:8px 0"></div>
+        <div style="display:flex;justify-content:space-between;font-weight:700"><span style="color:var(--gold2)">EL (ECL Stage 1)</span><span style="color:var(--red2)">AOA 60,5M</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- COMPLIANCE -->
+  <div class="card">
+    <div class="module-title"><span class="module-badge">COMPLIANCE</span>Validações BNA · IFRS 9 · Basileia III · AML</div>
+    <div class="grid grid-2" style="gap:8px">
+      <div id="compliance-checks"></div>
+      <div>
+        <div class="alert alert-info">
+          <span class="alert-icon">🏛</span>
+          <div><strong>Aviso BNA 02/2019:</strong> Concentração individual da exposição proposta representa 18,5% dos Fundos Próprios do banco — dentro do limite legal de 25% por devedor individual em Angola.</div>
+        </div>
+        <div class="alert alert-warn">
+          <span class="alert-icon">⚠️</span>
+          <div><strong>Basileia III — RWA:</strong> Peso de risco aplicável: 100% (empresa não cotada, sem garantia soberana). Capital requerido: AOA 360M (8% × RWA). Disponível no banco: AOA 520M.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECÇÃO 5: IFRS 9 / ECL ═══════════════════ -->
+<div class="section" id="s-ifrs9">
+  <div class="section-title">IFRS 9 — Classificação de Stages &amp; Expected Credit Loss</div>
+  <div class="section-sub">Modelo ECL de 3 etapas conforme IFRS 9. Avaliação de deterioração significativa do crédito (SICR) e cálculo de imparidade ao longo da vida.</div>
+
+  <!-- STAGE CLASSIFICATION -->
+  <div class="grid grid-3" style="gap:14px;margin-bottom:16px">
+    <div class="card" style="border:1px solid rgba(16,185,129,.3)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="module-title" style="margin:0">Stage 1 — Performing</div>
+        <span class="stage-badge stage1">STAGE 1</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">Crédito sem deterioração significativa desde o reconhecimento inicial. ECL calculado com horizonte de 12 meses.</div>
+      <div style="background:var(--bg3);border-radius:6px;padding:12px;font-size:11px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="color:var(--text3)">PD 12M</span><span style="color:var(--green2)">3,20%</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="color:var(--text3)">LGD</span><span>42,00%</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="color:var(--text3)">EAD</span><span>AOA 4.500M</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:8px"><span style="color:var(--gold2)">ECL 12M</span><span style="color:var(--green2)">AOA 60,5M</span></div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--green3)">✓ Classificação actual — SICR não identificado</div>
+    </div>
+
+    <div class="card" style="border:1px solid rgba(245,158,11,.3)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="module-title" style="margin:0">Stage 2 — Under-performing</div>
+        <span class="stage-badge stage2">STAGE 2</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">Deterioração significativa do risco de crédito (SICR). ECL calculado ao longo da vida do instrumento (lifetime ECL).</div>
+      <div style="background:var(--bg3);border-radius:6px;padding:12px;font-size:11px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="color:var(--text3)">PD Lifetime</span><span style="color:var(--amber2)">12,80%</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="color:var(--text3)">LGD</span><span>42,00%</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="color:var(--text3)">EAD (PFE)</span><span>AOA 4.200M</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:8px"><span style="color:var(--gold2)">ECL Lifetime</span><span style="color:var(--amber2)">AOA 226M</span></div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--amber3)">⚠ Gatilho Stage 2: PD aumenta >2x ou atraso >30 dias</div>
+    </div>
+
+    <div class="card" style="border:1px solid rgba(239,68,68,.3)">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+        <div class="module-title" style="margin:0">Stage 3 — Non-performing</div>
+        <span class="stage-badge stage3">STAGE 3</span>
+      </div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px;line-height:1.6">Evidência objectiva de imparidade (default). ECL lifetime. Juros reconhecidos sobre valor líquido de imparidade.</div>
+      <div style="background:var(--bg3);border-radius:6px;padding:12px;font-size:11px">
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="color:var(--text3)">PD Lifetime</span><span style="color:var(--red2)">100%</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="color:var(--text3)">LGD</span><span>42,00%</span></div>
+        <div style="display:flex;justify-content:space-between;margin-bottom:5px"><span style="color:var(--text3)">EAD</span><span>AOA 4.500M</span></div>
+        <div style="display:flex;justify-content:space-between;font-weight:700;margin-top:8px"><span style="color:var(--gold2)">ECL Stage 3</span><span style="color:var(--red2)">AOA 1.890M</span></div>
+      </div>
+      <div style="margin-top:10px;font-size:10px;color:var(--red3)">🔴 Gatilho: atraso >90 dias, insolvência, reestruturação</div>
+    </div>
+  </div>
+
+  <!-- SICR TRIGGERS -->
+  <div class="grid grid-2" style="gap:14px;margin-bottom:14px">
+    <div class="card">
+      <div class="module-title">Gatilhos SICR — Deterioração Significativa do Risco</div>
+      <table>
+        <thead><tr><th>Critério SICR</th><th>Limiar</th><th>Actual</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Aumento do PD vs originação</td><td>&gt;2x</td><td>1,8x</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr><td>Atraso de pagamento</td><td>&gt;30 dias</td><td>0 dias</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr><td>Downgrade de rating interno</td><td>≥2 notches</td><td>0 notches</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr><td>Reestruturação de dívida</td><td>Qualquer</td><td>Não</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr><td>Deterioração DSCR</td><td>&lt;1,0x</td><td>1,50x</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr><td>Leverage acima de covenant</td><td>&gt;4,0x</td><td>2,27x</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr><td>Liquidez crítica</td><td>&lt;1,0x</td><td>1,45x</td><td><span class="tag tag-amber">Monitorizar</span></td></tr>
+          <tr><td>Deterioração sectorial (Angola)</td><td>Stress macro</td><td>Moderado</td><td><span class="tag tag-amber">Monitorizar</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="module-title">ECL Sensibilidade — Cenários Macroeconómicos Angola</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:12px">Ponderação: Base 50% · Optimista 25% · Adverso 25%</div>
+      <table>
+        <thead><tr><th>Cenário</th><th>PIB Angola</th><th>USD/AOA</th><th>PD Ajustada</th><th>ECL</th><th>Peso</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-green">Optimista</span></td><td>+3,5%</td><td>850</td><td>1,8%</td><td>AOA 34M</td><td>25%</td></tr>
+          <tr><td><span class="tag tag-blue">Base</span></td><td>+1,8%</td><td>920</td><td>3,2%</td><td>AOA 60M</td><td>50%</td></tr>
+          <tr><td><span class="tag tag-red">Adverso</span></td><td>-1,2%</td><td>1.100</td><td>7,8%</td><td>AOA 147M</td><td>25%</td></tr>
+          <tr style="font-weight:600"><td colspan="4" style="color:var(--gold2)">ECL PONDERADO (IFRS 9)</td><td style="color:var(--amber2)">AOA 75M</td><td></td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-info" style="margin-top:12px">
+        <span class="alert-icon">📊</span>
+        <div><strong>Forward-looking:</strong> Incorpora previsões macroeconómicas BNA 2024-2025. Cenário adverso inclui choque do petróleo Brent &lt; $65/bbl e desvalorização AOA adicional de 20%.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ECL WATERFALL -->
+  <div class="card">
+    <div class="module-title">Movimento de Provisões ECL (IFRS 9)</div>
+    <table>
+      <thead><tr><th>Rubrica</th><th>Stage 1</th><th>Stage 2</th><th>Stage 3</th><th>Total ECL</th></tr></thead>
+      <tbody>
+        <tr><td>Saldo inicial de imparidade</td><td>AOA 48M</td><td>AOA 0</td><td>AOA 0</td><td>AOA 48M</td></tr>
+        <tr><td>(+) Nova originação</td><td>AOA 60M</td><td>—</td><td>—</td><td>AOA 60M</td></tr>
+        <tr><td>(±) Transferência entre stages</td><td>AOA (12M)</td><td>AOA 12M</td><td>—</td><td>—</td></tr>
+        <tr><td>(±) Remensurações (FLI)</td><td>AOA 8M</td><td>AOA 4M</td><td>—</td><td>AOA 12M</td></tr>
+        <tr><td>(−) Abates / Write-offs</td><td>—</td><td>—</td><td>—</td><td>—</td></tr>
+        <tr style="font-weight:700;background:rgba(212,160,23,.08)"><td style="color:var(--gold2)">Saldo final de imparidade</td><td>AOA 96M</td><td>AOA 16M</td><td>—</td><td style="color:var(--amber2)">AOA 112M</td></tr>
+        <tr style="font-weight:700"><td style="color:var(--gold2)">Cobertura ECL / EAD</td><td>2,13%</td><td>0,36%</td><td>—</td><td style="color:var(--amber2)">2,49%</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECÇÃO 6: GARANTIAS ═══════════════════ -->
+<div class="section" id="s-garantias">
+  <div class="section-title">Avaliação de Garantias</div>
+  <div class="section-sub">Análise da cobertura, qualidade e LTV das garantias propostas. Classificação conforme critérios BNA e Basileia III.</div>
+
+  <div class="grid grid-2" style="gap:14px;margin-bottom:14px">
+    <div class="card">
+      <div class="module-title">Pacote de Garantias Proposto</div>
+      <table>
+        <thead><tr><th>Tipo</th><th>Descrição</th><th>Valor (AOA M)</th><th>Haircut</th><th>Val. Líquido</th><th>Class.</th></tr></thead>
+        <tbody>
+          <tr><td>🏢 Hipoteca</td><td>Imóvel comercial Talatona, Luanda</td><td>3.200</td><td>30%</td><td>2.240</td><td><span class="tag tag-green">Forte</span></td></tr>
+          <tr><td>📦 Penhor</td><td>Stocks mercadorias (garantia flutuante)</td><td>900</td><td>60%</td><td>360</td><td><span class="tag tag-amber">Adequada</span></td></tr>
+          <tr><td>💳 Cessão</td><td>Cessão de créditos (contas a receber)</td><td>680</td><td>50%</td><td>340</td><td><span class="tag tag-amber">Adequada</span></td></tr>
+          <tr><td>🏛 Garantia Pessoal</td><td>Aval sócios-gerentes (pessoal)</td><td>500</td><td>70%</td><td>150</td><td><span class="tag tag-amber">Adequada</span></td></tr>
+          <tr style="font-weight:700"><td colspan="2" style="color:var(--gold2)">TOTAL GARANTIAS</td><td>5.280</td><td>—</td><td style="color:var(--amber2)">3.090</td><td></td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card">
+      <div class="module-title">Métricas de Cobertura</div>
+      <div class="grid grid-2" style="gap:10px;margin-bottom:12px">
+        <div class="kpi warn">
+          <div class="kpi-label">LTV (Loan-to-Value)</div>
+          <div class="kpi-value">72%</div>
+          <div class="kpi-delta" style="color:var(--amber2)">⚠ Max recomendado: 70%</div>
+        </div>
+        <div class="kpi good">
+          <div class="kpi-label">Cobertura de Garantias</div>
+          <div class="kpi-value">1,37x</div>
+          <div class="kpi-delta" style="color:var(--green2)">✓ Min: 1,20x</div>
+        </div>
+        <div class="kpi good">
+          <div class="kpi-label">Garantia Real / Exposição</div>
+          <div class="kpi-value">49,8%</div>
+          <div class="kpi-delta" style="color:var(--green2)">Imóvel Talatona</div>
+        </div>
+        <div class="kpi warn">
+          <div class="kpi-label">Classificação Geral</div>
+          <div class="kpi-value" style="font-size:14px">Adequada</div>
+          <div class="kpi-delta" style="color:var(--amber2)">Reforço recomendado</div>
+        </div>
+      </div>
+      <div class="alert alert-warn">
+        <span class="alert-icon">⚠️</span>
+        <div>LTV ligeiramente acima do limite interno (72% vs 70%). Recomendar reforço com garantia bancária ou depósito caução de AOA 200M para reduzir LTV para 67,5%.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="module-title">Avaliação Detalhada — Hipoteca Imóvel Talatona</div>
+    <div class="grid grid-3" style="gap:12px">
+      <div style="font-size:12px;color:var(--text2);line-height:1.8">
+        <div><span style="color:var(--text3)">Localização:</span> Talatona, Luanda Sul</div>
+        <div><span style="color:var(--text3)">Tipo:</span> Imóvel comercial (armazém + escritórios)</div>
+        <div><span style="color:var(--text3)">Área:</span> 2.400 m²</div>
+        <div><span style="color:var(--text3)">Avaliação:</span> USD 3,8M (AOA 3.496M)</div>
+        <div><span style="color:var(--text3)">Avaliador:</span> Cushman &amp; Wakefield Angola</div>
+        <div><span style="color:var(--text3)">Data avaliação:</span> Mar/2024</div>
+      </div>
+      <div style="font-size:12px;color:var(--text2);line-height:1.8">
+        <div><span style="color:var(--text3)">Registo:</span> Cartório Notarial de Luanda</div>
+        <div><span style="color:var(--text3)">Ónus existentes:</span> Nenhum</div>
+        <div><span style="color:var(--text3)">Seguro:</span> Ativo (AOA 3.200M)</div>
+        <div><span style="color:var(--text3)">Liquidez:</span> Moderada (mercado imob. Luanda)</div>
+        <div><span style="color:var(--text3)">Prazo realização:</span> 12-24 meses estimado</div>
+        <div><span style="color:var(--text3)">Desconto judicial:</span> 30-35% histórico Angola</div>
+      </div>
+      <div>
+        <div class="alert alert-success">
+          <span class="alert-icon">✅</span>
+          <div>Hipoteca de 1ª grau registada. Título de propriedade validado. Imóvel livre de ónus. <strong>Garantia classificada: FORTE.</strong></div>
+        </div>
+        <div class="alert alert-info">
+          <span class="alert-icon">📋</span>
+          <div>Reavaliação obrigatória a cada 3 anos ou em caso de deterioração do mercado imobiliário em Luanda.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECÇÃO 7: CÂMBIO ═══════════════════ -->
+<div class="section" id="s-cambial">
+  <div class="section-title">Análise Cambial — USD/AOA</div>
+  <div class="section-sub">Avaliação da exposição cambial, risco de conversão e impacto da desvalorização do kwanza no serviço da dívida.</div>
+
+  <div class="alert alert-warn" style="margin-bottom:16px">
+    <span class="alert-icon">💱</span>
+    <div><strong>Risco Cambial Identificado:</strong> 38% das receitas em AOA vs 62% dos custos de aprovisionamento indexados a USD. Desvalorização adicional do AOA de 20% aumentaria o CMVMC em ~AOA 1.230M e comprimiria o EBITDA de 17,6% para 9,2%.</div>
+  </div>
+
+  <div class="grid grid-4" style="gap:12px;margin-bottom:14px">
+    <div class="kpi warn">
+      <div class="kpi-label">Taxa USD/AOA Actual</div>
+      <div class="kpi-value ccy-pair">920</div>
+      <div class="kpi-delta" style="color:var(--text3)">BNA · Jun 2024</div>
+    </div>
+    <div class="kpi bad">
+      <div class="kpi-label">Depreciação 12M</div>
+      <div class="kpi-value">-18,4%</div>
+      <div class="kpi-delta" style="color:var(--red2)">AOA vs USD</div>
+    </div>
+    <div class="kpi warn">
+      <div class="kpi-label">Exp. USD (Custos)</div>
+      <div class="kpi-value">62%</div>
+      <div class="kpi-delta" style="color:var(--text3)">Aprovisionamento</div>
+    </div>
+    <div class="kpi info">
+      <div class="kpi-label">Receitas AOA</div>
+      <div class="kpi-value">38%</div>
+      <div class="kpi-delta" style="color:var(--text3)">Mercado local</div>
+    </div>
+  </div>
+
+  <div class="grid grid-2" style="gap:14px;margin-bottom:14px">
+    <div class="card">
+      <div class="module-title">Análise de Sensibilidade — EBITDA vs USD/AOA</div>
+      <table>
+        <thead><tr><th>Cenário USD/AOA</th><th>Taxa</th><th>Impacto CMVMC</th><th>EBITDA Est.</th><th>Margem</th><th>DSCR</th></tr></thead>
+        <tbody>
+          <tr><td><span class="tag tag-green">Apreciação 10%</span></td><td>828</td><td>-AOA 615M</td><td>2.345M</td><td>23,8%</td><td>2,03x</td></tr>
+          <tr style="background:rgba(212,160,23,.06)"><td><span class="tag tag-blue">Base (actual)</span></td><td>920</td><td>—</td><td>1.730M</td><td>17,6%</td><td>1,50x</td></tr>
+          <tr><td><span class="tag tag-amber">Depreciação 15%</span></td><td>1.058</td><td>+AOA 923M</td><td>807M</td><td>8,2%</td><td>0,70x ⚠</td></tr>
+          <tr><td><span class="tag tag-red">Depreciação 30%</span></td><td>1.196</td><td>+AOA 1.845M</td><td>-115M</td><td>neg.</td><td>neg. 🔴</td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-danger" style="margin-top:12px">
+        <span class="alert-icon">🔴</span>
+        <div>Depreciação do AOA &gt;15% leva DSCR abaixo de 1,0x (trigger de covenant). Depreciação &gt;30% torna o negócio inviável — cenário não previsto mas historicamente possível em Angola (2019-2020: depreciação de 52%).</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="module-title">Instrumentos de Mitigação Cambial</div>
+      <table>
+        <thead><tr><th>Instrumento</th><th>Disponível Angola</th><th>Custo Est.</th><th>Recomendação</th></tr></thead>
+        <tbody>
+          <tr><td>Forward USD/AOA (BNA)</td><td><span class="tag tag-amber">Limitado</span></td><td>8-12% a.a.</td><td><span class="tag tag-amber">Considerar</span></td></tr>
+          <tr><td>Natural hedge (receitas USD)</td><td><span class="tag tag-green">Sim</span></td><td>—</td><td><span class="tag tag-green">Implementar</span></td></tr>
+          <tr><td>Pricing indexado a USD</td><td><span class="tag tag-green">Sim</span></td><td>—</td><td><span class="tag tag-green">Recomendado</span></td></tr>
+          <tr><td>Conta USD BNA</td><td><span class="tag tag-green">Sim</span></td><td>0,5% manutenção</td><td><span class="tag tag-green">Recomendado</span></td></tr>
+          <tr><td>Opções cambiais</td><td><span class="tag tag-red">Não disponível</span></td><td>—</td><td><span class="tag tag-red">N/A</span></td></tr>
+          <tr><td>Cláusula indexação contrato</td><td><span class="tag tag-green">Sim</span></td><td>—</td><td><span class="tag tag-green">Covenant</span></td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-info" style="margin-top:12px">
+        <span class="alert-icon">💡</span>
+        <div><strong>Condição proposta:</strong> Empresa deve demonstrar 40% das receitas indexadas a USD ou manter conta USD com saldo mínimo de USD 200.000 como reserva cambial.</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="module-title">Evolução USD/AOA — Histórico &amp; Projecção BNA</div>
+    <div class="chart-wrap" style="height:180px"><canvas id="fxChart"></canvas></div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECÇÃO 8: CONCENTRAÇÃO ═══════════════════ -->
+<div class="section" id="s-concentracao">
+  <div class="section-title">Concentração de Risco — Grupo Económico &amp; Sectorial</div>
+  <div class="section-sub">Análise de limites por grupo económico, concentração sectorial da carteira e exposição agregada. Conformidade com Aviso BNA 02/2019.</div>
+
+  <div class="grid grid-2" style="gap:14px;margin-bottom:14px">
+    <div class="card">
+      <div class="module-title">Exposição Grupo Atlântico Angola — Limite por Grupo</div>
+      <div class="alert alert-info" style="margin-bottom:12px">
+        <span class="alert-icon">🏢</span>
+        <div>Exposição total ao Grupo Atlântico Angola (incluindo operação proposta). Limite regulatório BNA: 25% dos Fundos Próprios por Devedor/Grupo.</div>
+      </div>
+      <table>
+        <thead><tr><th>Entidade do Grupo</th><th>Exposição (AOA M)</th><th>% FP Banco</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Sonangro Distribuidora, S.A.</td><td>4.500 <span style="color:var(--gold2);font-size:10px">(proposta)</span></td><td>18,5%</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr><td>Atlântico Imóveis, S.A.</td><td>2.100</td><td>8,6%</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr><td>Grupo Atlântico Holdings</td><td>800</td><td>3,3%</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr><td>Atlântico Logística, Lda.</td><td>340</td><td>1,4%</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr style="font-weight:700"><td style="color:var(--gold2)">TOTAL GRUPO</td><td style="color:var(--amber2)">7.740</td><td style="color:var(--amber2)">31,8%</td><td><span class="tag tag-red">⚠ EXCEDE 25%</span></td></tr>
+        </tbody>
+      </table>
+      <div class="alert alert-danger" style="margin-top:12px">
+        <span class="alert-icon">🔴</span>
+        <div><strong>ALERTA DE CONCENTRAÇÃO:</strong> Exposição total ao Grupo Atlântico Angola de AOA 7.740M representa 31,8% dos Fundos Próprios — acima do limite BNA de 25%. Requer autorização do Conselho de Administração e comunicação ao BNA. A aprovação desta operação deve ser condicionada à redução de outras exposições do grupo para AOA 6.085M (25% FP).</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="module-title">Concentração Sectorial da Carteira de Crédito</div>
+      <div style="font-size:11px;color:var(--text3);margin-bottom:8px">Distribuição actual da carteira por sector (antes da operação proposta)</div>
+      <div class="conc-bar" id="concBar"></div>
+      <div id="concLegend" style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0"></div>
+      <div class="divider"></div>
+      <table>
+        <thead><tr><th>Sector</th><th>Exposição (AOA M)</th><th>% Carteira</th><th>Limite Interno</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td>Comércio / Distribuição</td><td>24.500</td><td>28,2%</td><td>30%</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr style="background:rgba(212,160,23,.05)"><td><strong>→ Pós operação proposta</strong></td><td>29.000</td><td>32,6%</td><td>30%</td><td><span class="tag tag-amber">⚠ Monitorizar</span></td></tr>
+          <tr><td>Petróleo e Serviços</td><td>18.200</td><td>20,9%</td><td>25%</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr><td>Construção</td><td>14.800</td><td>17,0%</td><td>20%</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr><td>Indústria</td><td>12.100</td><td>13,9%</td><td>20%</td><td><span class="tag tag-green">OK</span></td></tr>
+          <tr><td>Outros Sectores</td><td>17.300</td><td>19,9%</td><td>—</td><td><span class="tag tag-green">OK</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="module-title">Limites de Concentração — Matriz Regulatória BNA &amp; Interna</div>
+    <div class="grid grid-4" style="gap:10px">
+      <div class="kpi bad">
+        <div class="kpi-label">Limite por Grupo (BNA)</div>
+        <div class="kpi-value">25% FP</div>
+        <div class="kpi-delta" style="color:var(--red2)">🔴 Excedido: 31,8%</div>
+      </div>
+      <div class="kpi warn">
+        <div class="kpi-label">Conc. Sectorial Comércio</div>
+        <div class="kpi-value">32,6%</div>
+        <div class="kpi-delta" style="color:var(--amber2)">⚠ Limite: 30%</div>
+      </div>
+      <div class="kpi good">
+        <div class="kpi-label">Top 10 Devedores / Carteira</div>
+        <div class="kpi-value">18,4%</div>
+        <div class="kpi-delta" style="color:var(--green2)">✓ Limite: 25%</div>
+      </div>
+      <div class="kpi good">
+        <div class="kpi-label">Grandes Riscos (BNA)</div>
+        <div class="kpi-value">3 exposições</div>
+        <div class="kpi-delta" style="color:var(--green2)">✓ Limite: 8 exp.</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECÇÃO 9: COMITÉ ═══════════════════ -->
+<div class="section" id="s-comite">
+  <div class="section-title">Comité de Crédito — Matriz de Delegação de Poderes</div>
+  <div class="section-sub">Hierarquia de aprovação por montante, prazo e risco. Conformidade com política interna de crédito e regulamentação BNA.</div>
+
+  <div class="grid grid-4" style="gap:12px;margin-bottom:16px">
+    <div class="kpi purple">
+      <div class="kpi-label">Nível de Aprovação</div>
+      <div class="kpi-value" style="font-size:14px">Nível 3</div>
+      <div class="kpi-delta" style="color:var(--purple3)">Conselho de Administração</div>
+    </div>
+    <div class="kpi info">
+      <div class="kpi-label">Montante da Operação</div>
+      <div class="kpi-value" style="font-size:14px">AOA 4.500M</div>
+      <div class="kpi-delta" style="color:var(--blue3)">≈ USD 4,89M</div>
+    </div>
+    <div class="kpi warn">
+      <div class="kpi-label">Quórum Exigido</div>
+      <div class="kpi-value" style="font-size:14px">4/5 membros</div>
+      <div class="kpi-delta" style="color:var(--amber2)">+CRO obrigatório</div>
+    </div>
+    <div class="kpi bad">
+      <div class="kpi-label">Concentração Grupo</div>
+      <div class="kpi-value" style="font-size:14px">Aprovação BNA</div>
+      <div class="kpi-delta" style="color:var(--red2)">Requerida (31,8% FP)</div>
+    </div>
+  </div>
+
+  <!-- MATRIZ DE DELEGAÇÃO -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="module-title">Matriz de Delegação de Poderes de Aprovação de Crédito</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Nível de Aprovação</th>
+            <th>Órgão / Função</th>
+            <th>Limite Máximo Individual</th>
+            <th>Limite Grupo Económico</th>
+            <th>Rating Mínimo</th>
+            <th>Prazo Máximo</th>
+            <th>Observações</th>
+          </tr>
+        </thead>
+        <tbody id="tbl-delegacao">
+          <tr class="power-row-low">
+            <td><span class="tag tag-green">Nível 1</span></td>
+            <td>Gestor de Cliente / Analista Sénior</td>
+            <td>AOA 500M</td>
+            <td>AOA 800M</td>
+            <td>A ou superior</td>
+            <td>36 meses</td>
+            <td>Renovações e operações colateralizadas 100%</td>
+          </tr>
+          <tr class="power-row-low">
+            <td><span class="tag tag-green">Nível 2A</span></td>
+            <td>Comité de Crédito Balcão (DRO + DC)</td>
+            <td>AOA 1.500M</td>
+            <td>AOA 2.000M</td>
+            <td>BBB ou superior</td>
+            <td>60 meses</td>
+            <td>Quórum: 3/4 membros incl. Diretor de Risco</td>
+          </tr>
+          <tr class="power-row-med">
+            <td><span class="tag tag-amber">Nível 2B</span></td>
+            <td>Comité de Crédito Divisional (CRO + DCE)</td>
+            <td>AOA 3.000M</td>
+            <td>AOA 4.500M</td>
+            <td>BB ou superior</td>
+            <td>84 meses</td>
+            <td>Quórum: 3/4 membros. CRO voto de qualidade</td>
+          </tr>
+          <tr class="power-row-high" style="background:rgba(124,58,237,.08)">
+            <td><span class="tag tag-purple">Nível 3 ★</span></td>
+            <td>Conselho de Administração (CA)</td>
+            <td>AOA 8.000M</td>
+            <td>AOA 12.000M</td>
+            <td>B ou superior</td>
+            <td>120 meses</td>
+            <td>★ OPERAÇÃO ACTUAL. Quórum: 4/5 + CRO + Auditoria</td>
+          </tr>
+          <tr class="power-row-high">
+            <td><span class="tag tag-red">Nível 4</span></td>
+            <td>CA + Banco Nacional de Angola (BNA)</td>
+            <td>AOA 8.000M+</td>
+            <td>Acima de 25% FP</td>
+            <td>Qualquer</td>
+            <td>Qualquer</td>
+            <td>Grandes Riscos e Partes Relacionadas — aprovação BNA obrigatória</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- VOTAÇÃO SIMULADA -->
+  <div class="grid grid-2" style="gap:14px">
+    <div class="card">
+      <div class="module-title">Simulação de Votação — Conselho de Administração</div>
+      <div id="voting-simulation"></div>
+      <div class="divider"></div>
+      <div style="display:flex;gap:8px;justify-content:flex-end">
+        <button class="btn btn-outline btn-sm" onclick="simulateVote('reject')">🔴 Simular Rejeição</button>
+        <button class="btn btn-gold btn-sm" onclick="simulateVote('conditional')">⚠ Condicional</button>
+        <button class="btn btn-primary btn-sm" onclick="simulateVote('approve')">✅ Aprovar</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="module-title">Condições de Aprovação Propostas pelo Comité</div>
+      <div id="conditions-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════════ SECÇÃO 10: MEMORANDO ═══════════════════ -->
+<div class="section" id="s-memorando">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+    <div>
+      <div class="section-title">Memorando de Crédito</div>
+      <div class="section-sub">Documento oficial para submissão ao Comité de Crédito — gerado automaticamente pelo motor de análise.</div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-outline btn-sm" onclick="window.print()">🖨️ Imprimir PDF</button>
+      <button class="btn btn-gold btn-sm" onclick="exportExcel()">📊 Exportar Excel</button>
+    </div>
+  </div>
+
+  <div class="memo" id="memoContent">
+    <div class="memo-header">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div>
+          <div class="memo-bank">BANCO COMERCIAL ANGOLA · BCA</div>
+          <div class="memo-title">DEPARTAMENTO DE RISCO DE CRÉDITO CORPORATIVO</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font-size:10px;color:var(--text3)">REFERÊNCIA</div>
+          <div style="font-size:13px;font-weight:700;color:var(--gold2)">MC-CORP-2024-0847</div>
+          <div style="font-size:10px;color:var(--text3)" id="m-date"></div>
+        </div>
+      </div>
+      <div style="margin-top:12px;padding:10px 14px;background:rgba(212,160,23,.12);border-radius:6px;border-left:3px solid var(--gold2)">
+        <div style="font-size:10px;color:var(--text3)">ASSUNTO</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text)">Proposta de Concessão de Crédito — SONANGRO DISTRIBUIDORA, S.A. — AOA 4.500.000.000 (Quatro Mil e Quinhentos Milhões de Kwanzas) — Fundo de Maneio — 60 Meses</div>
+      </div>
+    </div>
+
+    <div class="memo-meta">
+      <div class="meta-item"><div class="meta-key">Empresa Mutuária</div><div class="meta-val">Sonangro Distribuidora, S.A.</div></div>
+      <div class="meta-item"><div class="meta-key">NIF</div><div class="meta-val">5000187654</div></div>
+      <div class="meta-item"><div class="meta-key">Grupo Económico</div><div class="meta-val">Grupo Atlântico Angola</div></div>
+      <div class="meta-item"><div class="meta-key">Sector</div><div class="meta-val">Comércio / Distribuição</div></div>
+      <div class="meta-item"><div class="meta-key">Montante Proposto</div><div class="meta-val" style="color:var(--gold2)">AOA 4.500.000.000</div></div>
+      <div class="meta-item"><div class="meta-key">Moeda</div><div class="meta-val">AOA — Kwanza Angolano</div></div>
+      <div class="meta-item"><div class="meta-key">Prazo</div><div class="meta-val">60 meses (5 anos)</div></div>
+      <div class="meta-item"><div class="meta-key">Finalidade</div><div class="meta-val">Fundo de Maneio — Financiamento do Ciclo Operacional</div></div>
+      <div class="meta-item"><div class="meta-key">Rating Interno</div><div class="meta-val" style="color:var(--amber2)">BBB — Risco Moderado</div></div>
+      <div class="meta-item"><div class="meta-key">Score de Crédito</div><div class="meta-val" style="color:var(--amber2)">67/100</div></div>
+      <div class="meta-item"><div class="meta-key">Nível de Aprovação</div><div class="meta-val" style="color:var(--purple2)">Nível 3 — Conselho de Administração</div></div>
+      <div class="meta-item"><div class="meta-key">Data de Análise</div><div class="meta-val" id="m-date2"></div></div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-section-title">1. Identificação e Enquadramento da Operação</div>
+      <div class="memo-text">A <strong>Sonangro Distribuidora, S.A.</strong>, com NIF 5000187654, é uma empresa angolana com sede em Luanda integrada no <strong>Grupo Atlântico Angola</strong>, desenvolvendo actividade no sector de <strong>Comércio e Distribuição</strong> de produtos alimentares e bens de consumo. A empresa opera há 12 anos no mercado angolano, apresentando uma estrutura accionista composta por investidores angolanos (70%) e participação de capital estrangeiro (30%).</div>
+      <div class="memo-text" style="margin-top:8px">A presente proposta visa a concessão de uma linha de crédito de <strong>fundo de maneio</strong> no valor de <strong>AOA 4.500.000.000</strong>, com prazo de 60 meses, destinada a financiar o ciclo operacional da empresa — nomeadamente a compra e pagamento de mercadorias (stocks) antes do recebimento dos clientes, cuja necessidade de fundo de maneio (NFM) se cifra actualmente em AOA 2.320.000.000.</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-section-title">2. Análise da Situação Económico-Financeira</div>
+      <div class="memo-text">Com base nas Demonstrações Financeiras auditadas dos exercícios de 2022, 2023 e 2024 (normativo PGC-A, auditadas pela Deloitte Angola), a empresa apresenta os seguintes indicadores consolidados:</div>
+      <div style="margin-top:10px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px">
+        <div style="background:var(--bg3);border-radius:6px;padding:10px">
+          <div style="font-size:10px;color:var(--text3)">Volume de Negócios 2024</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text)">AOA 9.840M</div>
+          <div style="font-size:10px;color:var(--green2)">▲ +21,2% vs 2023</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:6px;padding:10px">
+          <div style="font-size:10px;color:var(--text3)">EBITDA 2024</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text)">AOA 1.730M</div>
+          <div style="font-size:10px;color:var(--amber2)">Margem 17,6%</div>
+        </div>
+        <div style="background:var(--bg3);border-radius:6px;padding:10px">
+          <div style="font-size:10px;color:var(--text3)">DSCR Proforma</div>
+          <div style="font-size:14px;font-weight:700;color:var(--text)">1,50x</div>
+          <div style="font-size:10px;color:var(--green2)">✓ Acima do mínimo (1,25x)</div>
+        </div>
+      </div>
+      <div class="memo-text" style="margin-top:10px">A análise financeira revela uma empresa em expansão com fundamentos sólidos, registando deterioração da margem EBITDA (de 21,4% em 2023 para 17,6% em 2024) explicada pelo aumento do CMVMC derivado da pressão cambial USD/AOA. A liquidez corrente de 1,45x encontra-se ligeiramente abaixo do benchmark sectorial (1,60x), requerendo monitorização. O leverage de 2,27x Dívida Líquida/EBITDA é aceitável.</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-section-title">3. Risco de Crédito — Rating e Score</div>
+      <div class="memo-text">O modelo interno de rating atribui à Sonangro Distribuidora, S.A. o <strong>rating BBB — Risco Moderado (Investment Grade)</strong>, com um score de crédito de <strong>67/100</strong>, resultante da ponderação dos cinco pilares de risco: Risco Financeiro (40%) — 62/100; Risco de Negócio (20%) — 68/100; Gestão (15%) — 78/100; Garantias (15%) — 65/100; Histórico Bancário (10%) — 80/100.</div>
+      <div class="memo-text" style="margin-top:8px">A Probabilidade de Incumprimento (PD) a 12 meses é de <strong>3,20%</strong>, a Perda em Caso de Incumprimento (LGD) estimada é de <strong>42%</strong>, e a Perda Esperada (ECL — IFRS 9 Stage 1) corresponde a <strong>AOA 60,5M</strong> (1,34% da exposição).</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-section-title">4. IFRS 9 — Classificação de Stage e ECL</div>
+      <div class="memo-text">A exposição é classificada em <strong>Stage 1 (Performing)</strong> — sem deterioração significativa do risco de crédito (SICR) identificada à data de originação. O ECL ponderado por cenários macroeconómicos (base/optimista/adverso — ponderação 50/25/25) cifra-se em <strong>AOA 75M</strong>. A operação não desencadeia quaisquer gatilhos de transferência para Stage 2, à excepção do indicador de liquidez (monitorização). O cenário adverso (desvalorização AOA de 30%+) pode deteriorar o DSCR abaixo de 1,0x, o que constituirá gatilho automático para revisão de classificação IFRS 9.</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-section-title">5. Garantias e Cobertura</div>
+      <div class="memo-text">O pacote de garantias proposto inclui: <strong>(i)</strong> Hipoteca de 1.º grau sobre imóvel comercial em Talatona, Luanda, avaliado em AOA 3.200M (LTV: 72%, ligeiramente acima do limite interno de 70%); <strong>(ii)</strong> Penhor sobre stocks (AOA 360M líquido); <strong>(iii)</strong> Cessão de créditos a receber (AOA 340M); <strong>(iv)</strong> Aval pessoal dos sócios-gerentes (AOA 150M). Cobertura total de garantias líquidas: AOA 3.090M — cobertura de 1,37x (acima do mínimo de 1,20x). Classificação: <strong>Adequada</strong>.</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-section-title">6. Análise Cambial e Concentração</div>
+      <div class="memo-text">Identifica-se <strong>risco cambial moderado-elevado</strong>: 62% dos custos de aprovisionamento são USD-indexados enquanto 38% das receitas são em AOA. Uma depreciação adicional do AOA superior a 15% comprimiria o EBITDA para abaixo de 10% e o DSCR para 0,70x — zona crítica. Recomenda-se condição de manutenção de reserva cambial em USD.</div>
+      <div class="memo-text" style="margin-top:8px"><strong>ALERTA DE CONCENTRAÇÃO DE GRUPO:</strong> A exposição total ao Grupo Atlântico Angola atingirá AOA 7.740M (31,8% dos Fundos Próprios do banco), superando o limite legal BNA de 25%. Esta situação requer autorização explícita do Conselho de Administração e comunicação prévia ao BNA nos termos do Aviso n.º 02/2019.</div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-section-title">7. Principais Riscos Identificados</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--red2);margin-bottom:6px">⚠ Factores de Risco</div>
+          <div class="memo-condition" style="border-color:var(--red2)">🔴 Concentração de grupo excede limite BNA (31,8% vs 25%)</div>
+          <div class="memo-condition" style="border-color:var(--amber2)">⚠ Elevada exposição cambial USD/AOA nos custos (62%)</div>
+          <div class="memo-condition" style="border-color:var(--amber2)">⚠ Liquidez corrente abaixo do benchmark sectorial (1,45x vs 1,60x)</div>
+          <div class="memo-condition" style="border-color:var(--amber2)">⚠ LTV garantia principal ligeiramente acima do limite (72% vs 70%)</div>
+          <div class="memo-condition" style="border-color:var(--amber2)">⚠ Margem EBITDA em deterioração (-3,8pp YoY)</div>
+        </div>
+        <div>
+          <div style="font-size:11px;font-weight:700;color:var(--green2);margin-bottom:6px">✅ Factores Positivos</div>
+          <div class="memo-condition" style="border-color:var(--green2)">✅ Crescimento de vendas sustentado (+21,2% em 2024)</div>
+          <div class="memo-condition" style="border-color:var(--green2)">✅ DSCR proforma de 1,50x — acima do mínimo de 1,25x</div>
+          <div class="memo-condition" style="border-color:var(--green2)">✅ Historial bancário positivo — sem incumprimentos registados</div>
+          <div class="memo-condition" style="border-color:var(--green2)">✅ Gestão experiente — 12 anos no mercado angolano</div>
+          <div class="memo-condition" style="border-color:var(--green2)">✅ Garantia real de 1.º grau sobre imóvel em Luanda</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-section-title">8. Recomendação e Decisão</div>
+      <div style="padding:14px;background:rgba(217,119,6,.12);border:1px solid rgba(245,158,11,.3);border-radius:8px;margin-bottom:12px">
+        <div style="font-size:14px;font-weight:700;color:var(--amber2);margin-bottom:6px">⚠ APROVADO COM CONDIÇÕES — Limite: AOA 3.800.000.000</div>
+        <div class="memo-text">O Departamento de Risco de Crédito Corporativo recomenda a aprovação condicionada da operação, com redução do montante aprovado para <strong>AOA 3.800.000.000</strong> (vs AOA 4.500.000.000 solicitados), sujeita ao cumprimento das condições precedentes abaixo elencadas.</div>
+      </div>
+    </div>
+
+    <div class="memo-section">
+      <div class="memo-section-title">9. Condições de Aprovação</div>
+      <div id="memo-conditions"></div>
+    </div>
+
+    <div class="divider"></div>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-top:16px;text-align:center">
+      <div style="border-top:2px solid var(--border2);padding-top:10px">
+        <div style="font-size:10px;color:var(--text3)">Analista de Crédito Sénior</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-top:20px">_______________________</div>
+        <div style="font-size:10px;color:var(--text3)">Ass. / Data</div>
+      </div>
+      <div style="border-top:2px solid var(--border2);padding-top:10px">
+        <div style="font-size:10px;color:var(--text3)">Chief Risk Officer (CRO)</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-top:20px">_______________________</div>
+        <div style="font-size:10px;color:var(--text3)">Ass. / Data</div>
+      </div>
+      <div style="border-top:2px solid var(--border2);padding-top:10px">
+        <div style="font-size:10px;color:var(--text3)">Presidente do CA</div>
+        <div style="font-size:12px;font-weight:600;color:var(--text);margin-top:20px">_______________________</div>
+        <div style="font-size:10px;color:var(--text3)">Ass. / Data</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
