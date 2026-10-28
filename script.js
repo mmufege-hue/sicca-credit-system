@@ -1,4 +1,88 @@
-// ── STATE ──────────────────────────────────────────────────────────
+const STORAGE_KEY = 'sicca-credit-system-state-v1';
+
+const demoFinancials = {
+  cash: 240,
+  equivalents: 180,
+  clients: 1040,
+  inventory: 680,
+  otherCurrentAssets: 300,
+  fixedAssets: 1850,
+  intangibleAssets: 420,
+  accumulatedDepreciation: 500,
+  suppliers: 1180,
+  shortTermLoans: 430,
+  longTermLoans: 1250,
+  taxes: 180,
+  provisions: 110,
+  otherLiabilities: 310,
+  shareCapital: 1450,
+  reserves: 520,
+  retainedEarnings: 300,
+  netIncome: 680,
+  revenue: 9840,
+  cogs: 6150,
+  grossProfit: 3690,
+  personnelCosts: 1040,
+  opex: 980,
+  ebitda: 1730,
+  depreciation: 480,
+  ebit: 1250,
+  financialResult: 280,
+  taxesPaid: 140,
+  totalAssets: 6400,
+  totalEquity: 2200,
+  totalDebt: 4200,
+  netDebt: 3000,
+  currentAssets: 0,
+  currentLiabilities: 0,
+  totalLiabilities: 0
+};
+
+demoFinancials.currentAssets = demoFinancials.cash + demoFinancials.equivalents + demoFinancials.clients + demoFinancials.inventory + demoFinancials.otherCurrentAssets;
+demoFinancials.currentLiabilities = demoFinancials.suppliers + demoFinancials.shortTermLoans + demoFinancials.taxes + demoFinancials.provisions + demoFinancials.otherLiabilities;
+demoFinancials.totalLiabilities = demoFinancials.currentLiabilities + demoFinancials.longTermLoans + demoFinancials.otherLiabilities;
+demoFinancials.totalAssets = demoFinancials.currentAssets + demoFinancials.fixedAssets + demoFinancials.intangibleAssets - demoFinancials.accumulatedDepreciation;
+demoFinancials.totalEquity = demoFinancials.shareCapital + demoFinancials.reserves + demoFinancials.retainedEarnings + demoFinancials.netIncome;
+demoFinancials.totalDebt = demoFinancials.shortTermLoans + demoFinancials.longTermLoans;
+demoFinancials.netDebt = demoFinancials.totalDebt - demoFinancials.cash;
+
+const defaultAppState = {
+  empresa: 'SONANGRO DISTRIBUIDORA, S.A.',
+  nif: '5000187654',
+  sector: 'comercio',
+  grupo: 'GRUPO ATLÂNTICO ANGOLA',
+  montante: '4500',
+  moeda: 'AOA',
+  prazo: '60',
+  finalidade: 'fundo',
+  financials: demoFinancials,
+  lastSavedAt: null
+};
+
+function deepClone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function getPersistedState() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  if (!raw) return deepClone(defaultAppState);
+
+  try {
+    const parsed = JSON.parse(raw);
+    return {
+      ...deepClone(defaultAppState),
+      ...parsed,
+      financials: {
+        ...deepClone(demoFinancials),
+        ...(parsed.financials || {})
+      }
+    };
+  } catch (error) {
+    console.warn('State invalid. Loading default demo state.', error);
+    return deepClone(defaultAppState);
+  }
+}
+
 const state = {
   empresa: 'SONANGRO DISTRIBUIDORA, S.A.',
   analysed: false,
@@ -9,10 +93,241 @@ const state = {
   ead: 4500,
   dscr: 1.50,
   ecl: 60.5,
-  charts: {}
+  charts: {},
+  client: {},
+  financials: deepClone(demoFinancials)
 };
 
-// ── NAV ───────────────────────────────────────────────────────────
+const persistedState = getPersistedState();
+state.empresa = persistedState.empresa;
+state.client = {
+  empresa: persistedState.empresa,
+  nif: persistedState.nif,
+  sector: persistedState.sector,
+  grupo: persistedState.grupo,
+  montante: persistedState.montante,
+  moeda: persistedState.moeda,
+  prazo: persistedState.prazo,
+  finalidade: persistedState.finalidade
+};
+state.financials = persistedState.financials;
+
+function saveClientState() {
+  const nextState = {
+    empresa: document.getElementById('f-empresa')?.value || state.empresa,
+    nif: document.getElementById('f-nif')?.value || '',
+    sector: document.getElementById('f-sector')?.value || 'comercio',
+    grupo: document.getElementById('f-grupo')?.value || '',
+    montante: document.getElementById('f-montante')?.value || '0',
+    moeda: document.getElementById('f-moeda')?.value || 'AOA',
+    prazo: document.getElementById('f-prazo')?.value || '0',
+    finalidade: document.getElementById('f-finalidade')?.value || 'fundo',
+    financials: state.financials,
+    lastSavedAt: new Date().toISOString()
+  };
+
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
+  const statusEl = document.getElementById('save-status');
+  if (statusEl) {
+    statusEl.textContent = 'Dados guardados localmente';
+    statusEl.style.color = '#10b981';
+  }
+  state.empresa = nextState.empresa;
+  state.client = {
+    empresa: nextState.empresa,
+    nif: nextState.nif,
+    sector: nextState.sector,
+    grupo: nextState.grupo,
+    montante: nextState.montante,
+    moeda: nextState.moeda,
+    prazo: nextState.prazo,
+    finalidade: nextState.finalidade
+  };
+}
+
+function loadDemoState() {
+  const appState = deepClone(defaultAppState);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+
+  Object.entries({
+    'f-empresa': appState.empresa,
+    'f-nif': appState.nif,
+    'f-sector': appState.sector,
+    'f-grupo': appState.grupo,
+    'f-montante': appState.montante,
+    'f-moeda': appState.moeda,
+    'f-prazo': appState.prazo,
+    'f-finalidade': appState.finalidade
+  }).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  });
+
+  state.financials = deepClone(appState.financials);
+  state.empresa = appState.empresa;
+  state.client = {
+    empresa: appState.empresa,
+    nif: appState.nif,
+    sector: appState.sector,
+    grupo: appState.grupo,
+    montante: appState.montante,
+    moeda: appState.moeda,
+    prazo: appState.prazo,
+    finalidade: appState.finalidade
+  };
+
+  if (document.getElementById('save-status')) {
+    document.getElementById('save-status').textContent = 'Exemplo carregado';
+    document.getElementById('save-status').style.color = '#f59e0b';
+  }
+
+  runAnalysis();
+}
+
+function applyPersistedFormValues() {
+  Object.entries({
+    'f-empresa': persistedState.empresa,
+    'f-nif': persistedState.nif,
+    'f-sector': persistedState.sector,
+    'f-grupo': persistedState.grupo,
+    'f-montante': persistedState.montante,
+    'f-moeda': persistedState.moeda,
+    'f-prazo': persistedState.prazo,
+    'f-finalidade': persistedState.finalidade
+  }).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = value;
+  });
+}
+
+function formatNumber(value, decimals = 2) {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/D';
+  return Number(value).toFixed(decimals);
+}
+
+function safeRatio(numerator, denominator) {
+  const num = Number(numerator) || 0;
+  const den = Number(denominator) || 0;
+  if (!den) return null;
+  return num / den;
+}
+
+function formatRatio(value, suffix = 'x') {
+  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/D';
+  return `${Number(value).toFixed(2)}${suffix}`;
+}
+
+function buildComputedRatios() {
+  const f = state.financials;
+  const currentAssets = Number(f.currentAssets || (f.cash + f.equivalents + f.clients + f.inventory + f.otherCurrentAssets));
+  const currentLiabilities = Number(f.currentLiabilities || (f.suppliers + f.shortTermLoans + f.taxes + f.provisions + f.otherLiabilities));
+  const quickAssets = currentAssets - Number(f.inventory || 0);
+  const totalAssets = Number(f.totalAssets || (currentAssets + f.fixedAssets + f.intangibleAssets - f.accumulatedDepreciation));
+  const equity = Number(f.totalEquity || (f.shareCapital + f.reserves + f.retainedEarnings + f.netIncome));
+  const totalDebt = Number(f.totalDebt || (f.shortTermLoans + f.longTermLoans));
+  const grossProfit = Number(f.grossProfit || (f.revenue - f.cogs));
+  const ebitda = Number(f.ebitda || 0);
+  const netIncome = Number(f.netIncome || 0);
+  const debtToEBITDA = safeRatio(totalDebt, ebitda || 1);
+  const currentRatio = safeRatio(currentAssets, currentLiabilities);
+  const quickRatio = safeRatio(quickAssets, currentLiabilities);
+  const cashRatio = safeRatio(Number(f.cash || 0), currentLiabilities);
+  const nfm = Number(f.clients || 0) + Number(f.inventory || 0) - Number(f.suppliers || 0);
+  const financialAutonomy = safeRatio(equity, totalAssets);
+  const leverage = safeRatio(totalDebt, equity || 1);
+  const grossMargin = safeRatio(grossProfit, Number(f.revenue || 1));
+  const ebitdaMargin = safeRatio(ebitda, Number(f.revenue || 1));
+  const ebitMargin = safeRatio(Number(f.ebit || 0), Number(f.revenue || 1));
+  const roa = safeRatio(netIncome, totalAssets || 1);
+  const roe = safeRatio(netIncome, equity || 1);
+  const dscr = safeRatio(ebitda, Number(f.shortTermLoans || 0) + Number(f.longTermLoans || 0) + Number(f.financialResult || 0) || 1);
+
+  return {
+    liquidez: [
+      { name: 'Liquidez Corrente', formula: 'AC / PC', value: currentRatio, benchmark: '> 1,60x', status: currentRatio >= 1.6 ? 'good' : currentRatio >= 1.2 ? 'warn' : 'bad' },
+      { name: 'Liquidez Reduzida', formula: '(AC - Exist.) / PC', value: quickRatio, benchmark: '> 1,00x', status: quickRatio >= 1 ? 'good' : quickRatio >= 0.8 ? 'warn' : 'bad' },
+      { name: 'Liquidez Imediata', formula: 'Caixa / PC', value: cashRatio, benchmark: '> 0,20x', status: cashRatio >= 0.2 ? 'good' : cashRatio >= 0.1 ? 'warn' : 'bad' },
+      { name: 'NFM (AOA M)', formula: 'Clientes + Stocks - Fornec.', value: nfm / 1000, benchmark: 'N/A', status: 'info' },
+      { name: 'Ciclo de Caixa (dias)', formula: 'PMR + PMS - PMP', value: 85.6, benchmark: '< 90 d', status: 85.6 < 90 ? 'good' : 'warn' }
+    ],
+    endividamento: [
+      { name: 'Autonomia Financeira', formula: 'CP / AT', value: financialAutonomy, benchmark: '> 35%', status: financialAutonomy >= 0.35 ? 'good' : 'warn' },
+      { name: 'Debt Ratio', formula: 'PT / AT', value: safeRatio(totalDebt, totalAssets || 1), benchmark: '< 65%', status: safeRatio(totalDebt, totalAssets || 1) <= 0.65 ? 'good' : 'warn' },
+      { name: 'Leverage (Dív/EBITDA)', formula: '(Dív.Liq.) / EBITDA', value: debtToEBITDA, benchmark: '< 3,5x', status: debtToEBITDA < 3.5 ? 'good' : 'warn' },
+      { name: 'Debt/Equity', formula: 'PT / CP', value: safeRatio(totalDebt, equity || 1), benchmark: '< 2,0x', status: safeRatio(totalDebt, equity || 1) < 2 ? 'good' : 'warn' },
+      { name: 'Interest Coverage (ICR)', formula: 'EBIT / Juros', value: safeRatio(Number(f.ebit || 0), Number(f.financialResult || 1)), benchmark: '> 2,0x', status: safeRatio(Number(f.ebit || 0), Number(f.financialResult || 1)) > 2 ? 'good' : 'warn' }
+    ],
+    rentabilidade: [
+      { name: 'Margem Bruta', formula: 'MB / Vendas', value: grossMargin, benchmark: '> 35%', status: grossMargin >= 0.35 ? 'good' : 'warn' },
+      { name: 'Margem EBITDA', formula: 'EBITDA / Vendas', value: ebitdaMargin, benchmark: '> 21%', status: ebitdaMargin >= 0.21 ? 'good' : 'warn' },
+      { name: 'Margem EBIT', formula: 'EBIT / Vendas', value: ebitMargin, benchmark: '> 10%', status: ebitMargin >= 0.10 ? 'good' : 'warn' },
+      { name: 'ROA', formula: 'RL / AT', value: roa, benchmark: '> 8%', status: roa >= 0.08 ? 'good' : 'warn' },
+      { name: 'ROE', formula: 'RL / CP', value: roe, benchmark: '> 15%', status: roe >= 0.15 ? 'good' : 'warn' }
+    ],
+    eficiencia: [
+      { name: 'PMR (dias)', formula: '(Clientes / Vendas) × 365', value: 86.8, benchmark: '< 90 d', status: 86.8 < 90 ? 'good' : 'warn' },
+      { name: 'PMP (dias)', formula: '(Fornec. / CMVMC) × 365', value: 109.2, benchmark: '30–90 d', status: 'info' },
+      { name: 'PMS (dias)', formula: '(Stocks / CMVMC) × 365', value: 108.0, benchmark: '< 90 d', status: 'warn' },
+      { name: 'Ciclo Operacional', formula: 'PMR + PMS', value: 194.8, benchmark: '< 150 d', status: 'bad' },
+      { name: 'LTV Garantias', formula: 'Empréstimo / Val.Garantias', value: 0.72, benchmark: '< 70%', status: 0.72 <= 0.7 ? 'good' : 'warn' }
+    ]
+  };
+}
+
+function updateSaveStatus(message, tone = 'info') {
+  const statusEl = document.getElementById('save-status');
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.style.color = tone === 'good' ? '#10b981' : tone === 'warn' ? '#f59e0b' : '#8fa3c0';
+}
+
+function setInitialFormState() {
+  const initState = getPersistedState();
+  state.empresa = initState.empresa;
+  state.client = {
+    empresa: initState.empresa,
+    nif: initState.nif,
+    sector: initState.sector,
+    grupo: initState.grupo,
+    montante: initState.montante,
+    moeda: initState.moeda,
+    prazo: initState.prazo,
+    finalidade: initState.finalidade
+  };
+  state.financials = initState.financials;
+  applyPersistedFormValues();
+}
+
+function createTableRows(rows) {
+  return rows.map(r => {
+    const value = typeof r.value === 'number' ? (r.formula.includes('AOA M') ? `${(r.value).toFixed(2)} M` : r.value >= 1 && !r.name.includes('Margem') ? `${r.value.toFixed(2)}x` : r.value >= 0.1 ? `${(r.value * 100).toFixed(1)}%` : `${r.value.toFixed(2)}x`) : r.value;
+    const benchmark = r.benchmark || 'N/A';
+    const status = statusBadge(r.status || 'info');
+    return `<tr><td>${r.name}</td><td style="color:var(--text3);font-size:10px;font-family:monospace">${r.formula}</td><td style="font-weight:600">${value}</td><td style="color:var(--text3)">${benchmark}</td><td>${status}</td></tr>`;
+  }).join('');
+}
+
+function buildRatioTables() {
+  const computed = buildComputedRatios();
+  ['liquidez', 'endividamento', 'rentabilidade', 'eficiencia'].forEach(key => {
+    const el = document.getElementById('tbl-' + key);
+    if (!el) return;
+
+    const rows = computed[key].map(r => {
+      const value = typeof r.value === 'number' ? (
+        key === 'liquidez' && r.name === 'NFM (AOA M)' ? `${(r.value).toFixed(2)} M` :
+        r.name.includes('Margem') || r.name.includes('ROA') || r.name.includes('ROE') || r.name.includes('Autonomia') || r.name.includes('Debt Ratio') ? `${(r.value * 100).toFixed(1)}%` :
+        r.name.includes('Leverage') || r.name.includes('Debt/Equity') || r.name.includes('Interest') || r.name.includes('Liquidez') || r.name.includes('Ciclo') || r.name.includes('LTV') || r.name.includes('DSCR') ? `${r.value.toFixed(2)}x` : `${r.value.toFixed(1)}`
+      ) : r.value;
+
+      return `<tr><td>${r.name}</td><td style="color:var(--text3);font-size:10px;font-family:monospace">${r.formula}</td><td style="font-weight:600">${value}</td><td style="color:var(--text3)">${r.benchmark}</td><td>${statusBadge(r.status)}</td></tr>`;
+    });
+
+    el.innerHTML = rows.join('');
+  });
+}
+
+// ── NAV ──────────────────────────────────────────────────────────
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -51,6 +366,23 @@ function showFiles(files) {
       </div>
       <span style="font-size:10px;color:var(--green2)">✓ Pronto</span>
     </div>`;
+    if (f.name.toLowerCase().endsWith('.csv')) {
+      const reader = new FileReader();
+      reader.onload = function(fileText) {
+        const text = fileText.target.result;
+        const rows = text.split(/\r?\n/).map(line => line.split(';').map(cell => cell.trim()));
+        if (rows.length >= 2) {
+          const numbers = rows.slice(1).flatMap(row => row.filter(cell => !isNaN(parseFloat(cell.replace(',', '.')))).map(cell => parseFloat(cell.replace(',', '.'))));
+          if (numbers.length) {
+            state.financials.revenue = numbers[0] || state.financials.revenue;
+            state.financials.cogs = numbers[1] || state.financials.cogs;
+            state.financials.netIncome = numbers[2] || state.financials.netIncome;
+            updateSaveStatus('CSV importado e dados atualizados', 'good');
+          }
+        }
+      };
+      reader.readAsText(f);
+    }
   }
   list.innerHTML = html;
 }
@@ -70,11 +402,23 @@ function runAnalysis() {
   const montante = document.getElementById('f-montante').value;
   const prazo = document.getElementById('f-prazo').value;
   state.empresa = emp;
+  state.client = {
+    empresa: emp,
+    nif: document.getElementById('f-nif').value,
+    sector,
+    grupo: document.getElementById('f-grupo').value,
+    montante,
+    moeda: document.getElementById('f-moeda').value,
+    prazo,
+    finalidade: document.getElementById('f-finalidade').value
+  };
   state.analysed = true;
   document.getElementById('d-empresa-name').textContent = emp;
   document.getElementById('d-limite').textContent = 'AOA ' + Math.round(montante * 0.84) + ' Mio';
   document.getElementById('d-prazo-text').textContent = prazo + ' meses · ' + getFinalidade();
   document.getElementById('demo-alert').style.display = 'block';
+
+  saveClientState();
   buildRatioTables();
   buildScoreBreakdown();
   buildComplianceChecks();
@@ -132,16 +476,6 @@ function statusBadge(s) {
   const map = {good:'tag-green',warn:'tag-amber',bad:'tag-red',info:'tag-blue'};
   const lbl = {good:'✓ OK',warn:'⚠ Atenção',bad:'🔴 Alerta',info:'ℹ Info'};
   return `<span class="tag ${map[s]}">${lbl[s]}</span>`;
-}
-
-function buildRatioTables() {
-  ['liquidez','endividamento','rentabilidade','eficiencia'].forEach(k => {
-    const el = document.getElementById('tbl-' + k);
-    if (!el) return;
-    el.innerHTML = ratios[k].map(r =>
-      `<tr><td>${r.name}</td><td style="color:var(--text3);font-size:10px;font-family:monospace">${r.formula}</td><td style="font-weight:600">${r.val}</td><td style="color:var(--text3)">${r.bench}</td><td>${statusBadge(r.status)}</td></tr>`
-    ).join('');
-  });
 }
 
 // ── WATERFALL ─────────────────────────────────────────────────────
@@ -305,7 +639,7 @@ function buildHeatmap() {
       return `<div style="background:${colors[i.status]};border-radius:6px;padding:8px;text-align:center;border:1px solid rgba(255,255,255,.1)">
         <div style="font-size:9px;color:var(--text3);margin-bottom:3px">${i.name}</div>
         <div style="font-size:12px;font-weight:700;color:var(--text)">${typeof i.val === 'number' && i.val < 1 && i.name.includes('Mg') ? (i.val*100).toFixed(1)+'%' : i.val}</div>
-        <div style="height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:4px"><div style="height:100%;width:${pct}%;background:${i.status==='good'?'var(--green2)':i.status==='warn'?'var(--amber2)':'var(--red2)'};border-radius:2px"></div></div>
+        <div style="height:3px;background:rgba(255,255,255,.1);border-radius:2px;margin-top:4px"><div style="height:100%;width:${pct}%;background:${i.status==='good'?'var(--green2)':i.status==='warn'?'var(--amber2)':'var(--red2)'}"></div></div>
       </div>`;
     }).join('') + '</div>';
 }
@@ -514,7 +848,7 @@ function exportExcel() {
 }
 
 // ── INIT ──────────────────────────────────────────────────────────
-// Auto-run demo
+setInitialFormState();
 setTimeout(() => {
   runAnalysis();
   buildCharts();
