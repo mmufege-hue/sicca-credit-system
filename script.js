@@ -1,6 +1,6 @@
 const STORAGE_KEY = 'sicca-credit-system-state-v1';
 
-const demoFinancials = {
+const defaultFinancials = {
   cash: 240,
   equivalents: 180,
   clients: 1040,
@@ -38,48 +38,65 @@ const demoFinancials = {
   totalLiabilities: 0
 };
 
-demoFinancials.currentAssets = demoFinancials.cash + demoFinancials.equivalents + demoFinancials.clients + demoFinancials.inventory + demoFinancials.otherCurrentAssets;
-demoFinancials.currentLiabilities = demoFinancials.suppliers + demoFinancials.shortTermLoans + demoFinancials.taxes + demoFinancials.provisions + demoFinancials.otherLiabilities;
-demoFinancials.totalLiabilities = demoFinancials.currentLiabilities + demoFinancials.longTermLoans + demoFinancials.otherLiabilities;
-demoFinancials.totalAssets = demoFinancials.currentAssets + demoFinancials.fixedAssets + demoFinancials.intangibleAssets - demoFinancials.accumulatedDepreciation;
-demoFinancials.totalEquity = demoFinancials.shareCapital + demoFinancials.reserves + demoFinancials.retainedEarnings + demoFinancials.netIncome;
-demoFinancials.totalDebt = demoFinancials.shortTermLoans + demoFinancials.longTermLoans;
-demoFinancials.netDebt = demoFinancials.totalDebt - demoFinancials.cash;
-
-const defaultAppState = {
-  empresa: 'SONANGRO DISTRIBUIDORA, S.A.',
-  nif: '5000187654',
-  sector: 'comercio',
-  grupo: 'GRUPO ATLÂNTICO ANGOLA',
-  montante: '4500',
-  moeda: 'AOA',
-  prazo: '60',
-  finalidade: 'fundo',
-  financials: demoFinancials,
-  lastSavedAt: null
-};
-
 function deepClone(value) {
   return JSON.parse(JSON.stringify(value));
 }
 
+function toNumber(value, fallback = 0) {
+  const parsed = Number(String(value ?? '').replace(/[^0-9.,-]/g, '').replace(',', '.'));
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function defaultAppState() {
+  const financials = deepClone(defaultFinancials);
+  financials.currentAssets = financials.cash + financials.equivalents + financials.clients + financials.inventory + financials.otherCurrentAssets;
+  financials.currentLiabilities = financials.suppliers + financials.shortTermLoans + financials.taxes + financials.provisions + financials.otherLiabilities;
+  financials.totalLiabilities = financials.currentLiabilities + financials.longTermLoans + financials.otherLiabilities;
+  financials.totalAssets = financials.currentAssets + financials.fixedAssets + financials.intangibleAssets - financials.accumulatedDepreciation;
+  financials.totalEquity = financials.shareCapital + financials.reserves + financials.retainedEarnings + financials.netIncome;
+  financials.totalDebt = financials.shortTermLoans + financials.longTermLoans;
+  financials.netDebt = financials.totalDebt - financials.cash;
+  return {
+    empresa: 'SONANGRO DISTRIBUIDORA, S.A.',
+    nif: '5000187654',
+    sector: 'comercio',
+    grupo: 'GRUPO ATLÂNTICO ANGOLA',
+    montante: '4500',
+    moeda: 'AOA',
+    prazo: '60',
+    finalidade: 'fundo',
+    financials,
+    lastSavedAt: null
+  };
+}
+
 function getPersistedState() {
   const raw = localStorage.getItem(STORAGE_KEY);
-  if (!raw) return deepClone(defaultAppState);
+  if (!raw) return defaultAppState();
 
   try {
     const parsed = JSON.parse(raw);
-    return {
-      ...deepClone(defaultAppState),
-      ...parsed,
-      financials: {
-        ...deepClone(demoFinancials),
-        ...(parsed.financials || {})
-      }
-    };
+    const merged = defaultAppState();
+    merged.empresa = parsed.empresa || merged.empresa;
+    merged.nif = parsed.nif || merged.nif;
+    merged.sector = parsed.sector || merged.sector;
+    merged.grupo = parsed.grupo || merged.grupo;
+    merged.montante = parsed.montante || merged.montante;
+    merged.moeda = parsed.moeda || merged.moeda;
+    merged.prazo = parsed.prazo || merged.prazo;
+    merged.finalidade = parsed.finalidade || merged.finalidade;
+    merged.financials = { ...merged.financials, ...(parsed.financials || {}) };
+    merged.financials.currentAssets = merged.financials.cash + merged.financials.equivalents + merged.financials.clients + merged.financials.inventory + merged.financials.otherCurrentAssets;
+    merged.financials.currentLiabilities = merged.financials.suppliers + merged.financials.shortTermLoans + merged.financials.taxes + merged.financials.provisions + merged.financials.otherLiabilities;
+    merged.financials.totalLiabilities = merged.financials.currentLiabilities + merged.financials.longTermLoans + merged.financials.otherLiabilities;
+    merged.financials.totalAssets = merged.financials.currentAssets + merged.financials.fixedAssets + merged.financials.intangibleAssets - merged.financials.accumulatedDepreciation;
+    merged.financials.totalEquity = merged.financials.shareCapital + merged.financials.reserves + merged.financials.retainedEarnings + merged.financials.netIncome;
+    merged.financials.totalDebt = merged.financials.shortTermLoans + merged.financials.longTermLoans;
+    merged.financials.netDebt = merged.financials.totalDebt - merged.financials.cash;
+    return merged;
   } catch (error) {
-    console.warn('State invalid. Loading default demo state.', error);
-    return deepClone(defaultAppState);
+    console.warn('Invalid local state. Loading demo defaults.', error);
+    return defaultAppState();
   }
 }
 
@@ -95,7 +112,7 @@ const state = {
   ecl: 60.5,
   charts: {},
   client: {},
-  financials: deepClone(demoFinancials)
+  financials: deepClone(defaultFinancials)
 };
 
 const persistedState = getPersistedState();
@@ -112,6 +129,92 @@ state.client = {
 };
 state.financials = persistedState.financials;
 
+function syncFinancialFormFromState() {
+  const financialFields = {
+    cash: 'f-cash',
+    equivalents: 'f-equivalents',
+    clients: 'f-clients',
+    inventory: 'f-inventory',
+    otherCurrentAssets: 'f-other-current-assets',
+    fixedAssets: 'f-fixed-assets',
+    intangibleAssets: 'f-intangible-assets',
+    accumulatedDepreciation: 'f-accumulated-depreciation',
+    suppliers: 'f-suppliers',
+    shortTermLoans: 'f-short-term-loans',
+    longTermLoans: 'f-long-term-loans',
+    taxes: 'f-taxes',
+    provisions: 'f-provisions',
+    otherLiabilities: 'f-other-liabilities',
+    shareCapital: 'f-share-capital',
+    reserves: 'f-reserves',
+    retainedEarnings: 'f-retained-earnings',
+    netIncome: 'f-net-income',
+    revenue: 'f-revenue',
+    cogs: 'f-cogs',
+    personnelCosts: 'f-personnel-costs',
+    opex: 'f-opex',
+    ebitda: 'f-ebitda',
+    depreciation: 'f-depreciation',
+    ebit: 'f-ebit',
+    financialResult: 'f-financial-result',
+    taxesPaid: 'f-taxes-paid'
+  };
+
+  Object.entries(financialFields).forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    if (el) el.value = Number(state.financials[key] || 0);
+  });
+}
+
+function extractFinancialStateFromForm() {
+  const map = {
+    cash: 'f-cash',
+    equivalents: 'f-equivalents',
+    clients: 'f-clients',
+    inventory: 'f-inventory',
+    otherCurrentAssets: 'f-other-current-assets',
+    fixedAssets: 'f-fixed-assets',
+    intangibleAssets: 'f-intangible-assets',
+    accumulatedDepreciation: 'f-accumulated-depreciation',
+    suppliers: 'f-suppliers',
+    shortTermLoans: 'f-short-term-loans',
+    longTermLoans: 'f-long-term-loans',
+    taxes: 'f-taxes',
+    provisions: 'f-provisions',
+    otherLiabilities: 'f-other-liabilities',
+    shareCapital: 'f-share-capital',
+    reserves: 'f-reserves',
+    retainedEarnings: 'f-retained-earnings',
+    netIncome: 'f-net-income',
+    revenue: 'f-revenue',
+    cogs: 'f-cogs',
+    personnelCosts: 'f-personnel-costs',
+    opex: 'f-opex',
+    ebitda: 'f-ebitda',
+    depreciation: 'f-depreciation',
+    ebit: 'f-ebit',
+    financialResult: 'f-financial-result',
+    taxesPaid: 'f-taxes-paid'
+  };
+
+  const financials = { ...deepClone(defaultFinancials) };
+  Object.entries(map).forEach(([key, id]) => {
+    const el = document.getElementById(id);
+    financials[key] = toNumber(el ? el.value : 0, 0);
+  });
+
+  financials.currentAssets = financials.cash + financials.equivalents + financials.clients + financials.inventory + financials.otherCurrentAssets;
+  financials.currentLiabilities = financials.suppliers + financials.shortTermLoans + financials.taxes + financials.provisions + financials.otherLiabilities;
+  financials.totalLiabilities = financials.currentLiabilities + financials.longTermLoans + financials.otherLiabilities;
+  financials.totalAssets = financials.currentAssets + financials.fixedAssets + financials.intangibleAssets - financials.accumulatedDepreciation;
+  financials.totalEquity = financials.shareCapital + financials.reserves + financials.retainedEarnings + financials.netIncome;
+  financials.totalDebt = financials.shortTermLoans + financials.longTermLoans;
+  financials.netDebt = financials.totalDebt - financials.cash;
+  financials.grossProfit = financials.revenue - financials.cogs;
+
+  return financials;
+}
+
 function saveClientState() {
   const nextState = {
     empresa: document.getElementById('f-empresa')?.value || state.empresa,
@@ -122,17 +225,13 @@ function saveClientState() {
     moeda: document.getElementById('f-moeda')?.value || 'AOA',
     prazo: document.getElementById('f-prazo')?.value || '0',
     finalidade: document.getElementById('f-finalidade')?.value || 'fundo',
-    financials: state.financials,
+    financials: extractFinancialStateFromForm(),
     lastSavedAt: new Date().toISOString()
   };
 
   localStorage.setItem(STORAGE_KEY, JSON.stringify(nextState));
-  const statusEl = document.getElementById('save-status');
-  if (statusEl) {
-    statusEl.textContent = 'Dados guardados localmente';
-    statusEl.style.color = '#10b981';
-  }
   state.empresa = nextState.empresa;
+  state.financials = nextState.financials;
   state.client = {
     empresa: nextState.empresa,
     nif: nextState.nif,
@@ -143,42 +242,50 @@ function saveClientState() {
     prazo: nextState.prazo,
     finalidade: nextState.finalidade
   };
+
+  const statusEl = document.getElementById('save-status');
+  if (statusEl) {
+    statusEl.textContent = 'Dados guardados localmente';
+    statusEl.style.color = '#10b981';
+  }
 }
 
 function loadDemoState() {
-  const appState = deepClone(defaultAppState);
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+  const demo = defaultAppState();
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(demo));
 
   Object.entries({
-    'f-empresa': appState.empresa,
-    'f-nif': appState.nif,
-    'f-sector': appState.sector,
-    'f-grupo': appState.grupo,
-    'f-montante': appState.montante,
-    'f-moeda': appState.moeda,
-    'f-prazo': appState.prazo,
-    'f-finalidade': appState.finalidade
+    'f-empresa': demo.empresa,
+    'f-nif': demo.nif,
+    'f-sector': demo.sector,
+    'f-grupo': demo.grupo,
+    'f-montante': demo.montante,
+    'f-moeda': demo.moeda,
+    'f-prazo': demo.prazo,
+    'f-finalidade': demo.finalidade
   }).forEach(([id, value]) => {
     const el = document.getElementById(id);
     if (el) el.value = value;
   });
 
-  state.financials = deepClone(appState.financials);
-  state.empresa = appState.empresa;
+  state.financials = deepClone(demo.financials);
+  syncFinancialFormFromState();
+  state.empresa = demo.empresa;
   state.client = {
-    empresa: appState.empresa,
-    nif: appState.nif,
-    sector: appState.sector,
-    grupo: appState.grupo,
-    montante: appState.montante,
-    moeda: appState.moeda,
-    prazo: appState.prazo,
-    finalidade: appState.finalidade
+    empresa: demo.empresa,
+    nif: demo.nif,
+    sector: demo.sector,
+    grupo: demo.grupo,
+    montante: demo.montante,
+    moeda: demo.moeda,
+    prazo: demo.prazo,
+    finalidade: demo.finalidade
   };
 
-  if (document.getElementById('save-status')) {
-    document.getElementById('save-status').textContent = 'Exemplo carregado';
-    document.getElementById('save-status').style.color = '#f59e0b';
+  const statusEl = document.getElementById('save-status');
+  if (statusEl) {
+    statusEl.textContent = 'Exemplo carregado';
+    statusEl.style.color = '#f59e0b';
   }
 
   runAnalysis();
@@ -198,11 +305,9 @@ function applyPersistedFormValues() {
     const el = document.getElementById(id);
     if (el) el.value = value;
   });
-}
 
-function formatNumber(value, decimals = 2) {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/D';
-  return Number(value).toFixed(decimals);
+  state.financials = persistedState.financials;
+  syncFinancialFormFromState();
 }
 
 function safeRatio(numerator, denominator) {
@@ -210,11 +315,6 @@ function safeRatio(numerator, denominator) {
   const den = Number(denominator) || 0;
   if (!den) return null;
   return num / den;
-}
-
-function formatRatio(value, suffix = 'x') {
-  if (value === null || value === undefined || Number.isNaN(Number(value))) return 'N/D';
-  return `${Number(value).toFixed(2)}${suffix}`;
 }
 
 function buildComputedRatios() {
@@ -225,22 +325,28 @@ function buildComputedRatios() {
   const totalAssets = Number(f.totalAssets || (currentAssets + f.fixedAssets + f.intangibleAssets - f.accumulatedDepreciation));
   const equity = Number(f.totalEquity || (f.shareCapital + f.reserves + f.retainedEarnings + f.netIncome));
   const totalDebt = Number(f.totalDebt || (f.shortTermLoans + f.longTermLoans));
-  const grossProfit = Number(f.grossProfit || (f.revenue - f.cogs));
+  const revenue = Number(f.revenue || 1);
+  const grossProfit = Number(f.grossProfit || (revenue - (f.cogs || 0)));
   const ebitda = Number(f.ebitda || 0);
   const netIncome = Number(f.netIncome || 0);
-  const debtToEBITDA = safeRatio(totalDebt, ebitda || 1);
+  const ebit = Number(f.ebit || 0);
+  const financialCost = Number(f.financialResult || 0);
+
   const currentRatio = safeRatio(currentAssets, currentLiabilities);
   const quickRatio = safeRatio(quickAssets, currentLiabilities);
   const cashRatio = safeRatio(Number(f.cash || 0), currentLiabilities);
   const nfm = Number(f.clients || 0) + Number(f.inventory || 0) - Number(f.suppliers || 0);
-  const financialAutonomy = safeRatio(equity, totalAssets);
-  const leverage = safeRatio(totalDebt, equity || 1);
-  const grossMargin = safeRatio(grossProfit, Number(f.revenue || 1));
-  const ebitdaMargin = safeRatio(ebitda, Number(f.revenue || 1));
-  const ebitMargin = safeRatio(Number(f.ebit || 0), Number(f.revenue || 1));
+  const financialAutonomy = safeRatio(equity, totalAssets || 1);
+  const debtRatio = safeRatio(totalDebt, totalAssets || 1);
+  const debtToEBITDA = safeRatio(totalDebt, ebitda || 1);
+  const debtToEquity = safeRatio(totalDebt, equity || 1);
+  const interestCoverage = safeRatio(ebit, financialCost || 1);
+  const grossMargin = safeRatio(grossProfit, revenue || 1);
+  const ebitdaMargin = safeRatio(ebitda, revenue || 1);
+  const ebitMargin = safeRatio(ebit, revenue || 1);
   const roa = safeRatio(netIncome, totalAssets || 1);
   const roe = safeRatio(netIncome, equity || 1);
-  const dscr = safeRatio(ebitda, Number(f.shortTermLoans || 0) + Number(f.longTermLoans || 0) + Number(f.financialResult || 0) || 1);
+  const dscr = safeRatio(ebitda, totalDebt || 1);
 
   return {
     liquidez: [
@@ -252,10 +358,10 @@ function buildComputedRatios() {
     ],
     endividamento: [
       { name: 'Autonomia Financeira', formula: 'CP / AT', value: financialAutonomy, benchmark: '> 35%', status: financialAutonomy >= 0.35 ? 'good' : 'warn' },
-      { name: 'Debt Ratio', formula: 'PT / AT', value: safeRatio(totalDebt, totalAssets || 1), benchmark: '< 65%', status: safeRatio(totalDebt, totalAssets || 1) <= 0.65 ? 'good' : 'warn' },
+      { name: 'Debt Ratio', formula: 'PT / AT', value: debtRatio, benchmark: '< 65%', status: debtRatio <= 0.65 ? 'good' : 'warn' },
       { name: 'Leverage (Dív/EBITDA)', formula: '(Dív.Liq.) / EBITDA', value: debtToEBITDA, benchmark: '< 3,5x', status: debtToEBITDA < 3.5 ? 'good' : 'warn' },
-      { name: 'Debt/Equity', formula: 'PT / CP', value: safeRatio(totalDebt, equity || 1), benchmark: '< 2,0x', status: safeRatio(totalDebt, equity || 1) < 2 ? 'good' : 'warn' },
-      { name: 'Interest Coverage (ICR)', formula: 'EBIT / Juros', value: safeRatio(Number(f.ebit || 0), Number(f.financialResult || 1)), benchmark: '> 2,0x', status: safeRatio(Number(f.ebit || 0), Number(f.financialResult || 1)) > 2 ? 'good' : 'warn' }
+      { name: 'Debt/Equity', formula: 'PT / CP', value: debtToEquity, benchmark: '< 2,0x', status: debtToEquity < 2 ? 'good' : 'warn' },
+      { name: 'Interest Coverage (ICR)', formula: 'EBIT / Juros', value: interestCoverage, benchmark: '> 2,0x', status: interestCoverage > 2 ? 'good' : 'warn' }
     ],
     rentabilidade: [
       { name: 'Margem Bruta', formula: 'MB / Vendas', value: grossMargin, benchmark: '> 35%', status: grossMargin >= 0.35 ? 'good' : 'warn' },
@@ -274,37 +380,11 @@ function buildComputedRatios() {
   };
 }
 
-function updateSaveStatus(message, tone = 'info') {
-  const statusEl = document.getElementById('save-status');
-  if (!statusEl) return;
-  statusEl.textContent = message;
-  statusEl.style.color = tone === 'good' ? '#10b981' : tone === 'warn' ? '#f59e0b' : '#8fa3c0';
-}
-
-function setInitialFormState() {
-  const initState = getPersistedState();
-  state.empresa = initState.empresa;
-  state.client = {
-    empresa: initState.empresa,
-    nif: initState.nif,
-    sector: initState.sector,
-    grupo: initState.grupo,
-    montante: initState.montante,
-    moeda: initState.moeda,
-    prazo: initState.prazo,
-    finalidade: initState.finalidade
-  };
-  state.financials = initState.financials;
-  applyPersistedFormValues();
-}
-
-function createTableRows(rows) {
-  return rows.map(r => {
-    const value = typeof r.value === 'number' ? (r.formula.includes('AOA M') ? `${(r.value).toFixed(2)} M` : r.value >= 1 && !r.name.includes('Margem') ? `${r.value.toFixed(2)}x` : r.value >= 0.1 ? `${(r.value * 100).toFixed(1)}%` : `${r.value.toFixed(2)}x`) : r.value;
-    const benchmark = r.benchmark || 'N/A';
-    const status = statusBadge(r.status || 'info');
-    return `<tr><td>${r.name}</td><td style="color:var(--text3);font-size:10px;font-family:monospace">${r.formula}</td><td style="font-weight:600">${value}</td><td style="color:var(--text3)">${benchmark}</td><td>${status}</td></tr>`;
-  }).join('');
+function formatValue(value, type = 'number') {
+  if (value === null || value === undefined || Number.isNaN(value)) return 'N/D';
+  if (type === 'percent') return `${(value * 100).toFixed(1)}%`;
+  if (type === 'ratio') return `${value.toFixed(2)}x`;
+  return value.toFixed(2);
 }
 
 function buildRatioTables() {
@@ -313,17 +393,17 @@ function buildRatioTables() {
     const el = document.getElementById('tbl-' + key);
     if (!el) return;
 
-    const rows = computed[key].map(r => {
-      const value = typeof r.value === 'number' ? (
-        key === 'liquidez' && r.name === 'NFM (AOA M)' ? `${(r.value).toFixed(2)} M` :
-        r.name.includes('Margem') || r.name.includes('ROA') || r.name.includes('ROE') || r.name.includes('Autonomia') || r.name.includes('Debt Ratio') ? `${(r.value * 100).toFixed(1)}%` :
-        r.name.includes('Leverage') || r.name.includes('Debt/Equity') || r.name.includes('Interest') || r.name.includes('Liquidez') || r.name.includes('Ciclo') || r.name.includes('LTV') || r.name.includes('DSCR') ? `${r.value.toFixed(2)}x` : `${r.value.toFixed(1)}`
-      ) : r.value;
+    el.innerHTML = computed[key].map(r => {
+      let displayValue = r.value;
+      if (typeof displayValue === 'number') {
+        if (r.name.includes('NFM')) displayValue = `${(displayValue).toFixed(2)} M`;
+        else if (r.name.includes('Margem') || r.name.includes('ROA') || r.name.includes('ROE') || r.name.includes('Autonomia') || r.name.includes('Debt Ratio')) displayValue = `${(displayValue * 100).toFixed(1)}%`;
+        else if (r.name.includes('Leverage') || r.name.includes('Debt/Equity') || r.name.includes('Interest') || r.name.includes('Liquidez') || r.name.includes('LTV') || r.name.includes('DSCR') || r.name.includes('Ciclo') || r.name.includes('PMR') || r.name.includes('PMS') || r.name.includes('PMP')) displayValue = `${(displayValue).toFixed(2)}x`;
+        else if (r.name.includes('Ciclo de Caixa')) displayValue = `${(displayValue).toFixed(1)} d`;
+      }
 
-      return `<tr><td>${r.name}</td><td style="color:var(--text3);font-size:10px;font-family:monospace">${r.formula}</td><td style="font-weight:600">${value}</td><td style="color:var(--text3)">${r.benchmark}</td><td>${statusBadge(r.status)}</td></tr>`;
-    });
-
-    el.innerHTML = rows.join('');
+      return `<tr><td>${r.name}</td><td style="color:var(--text3);font-size:10px;font-family:monospace">${r.formula}</td><td style="font-weight:600">${displayValue}</td><td style="color:var(--text3)">${r.benchmark}</td><td>${statusBadge(r.status)}</td></tr>`;
+    }).join('');
   });
 }
 
@@ -372,13 +452,31 @@ function showFiles(files) {
         const text = fileText.target.result;
         const rows = text.split(/\r?\n/).map(line => line.split(';').map(cell => cell.trim()));
         if (rows.length >= 2) {
-          const numbers = rows.slice(1).flatMap(row => row.filter(cell => !isNaN(parseFloat(cell.replace(',', '.')))).map(cell => parseFloat(cell.replace(',', '.'))));
-          if (numbers.length) {
-            state.financials.revenue = numbers[0] || state.financials.revenue;
-            state.financials.cogs = numbers[1] || state.financials.cogs;
-            state.financials.netIncome = numbers[2] || state.financials.netIncome;
-            updateSaveStatus('CSV importado e dados atualizados', 'good');
-          }
+          const mapping = {};
+          const headers = rows[0].map(h => h.toLowerCase());
+          headers.forEach((header, idx) => {
+            const value = rows[1]?.[idx];
+            if (value) mapping[header] = value;
+          });
+
+          const financeKeys = {
+            receita: 'revenue',
+            vendas: 'revenue',
+            cogs: 'cogs',
+            custodasmateriais: 'cogs',
+            lucro: 'netIncome',
+            resultado: 'netIncome',
+            liquidez: 'cash'
+          };
+
+          Object.entries(financeKeys).forEach(([key, target]) => {
+            if (mapping[key]) state.financials[target] = toNumber(mapping[key], state.financials[target]);
+          });
+
+          state.financials = extractFinancialStateFromForm();
+          syncFinancialFormFromState();
+          saveClientState();
+          updateSaveStatus('CSV importado e valores financeiros atualizados', 'good');
         }
       };
       reader.readAsText(f);
@@ -401,6 +499,7 @@ function runAnalysis() {
   const sector = document.getElementById('f-sector').value;
   const montante = document.getElementById('f-montante').value;
   const prazo = document.getElementById('f-prazo').value;
+  state.financials = extractFinancialStateFromForm();
   state.empresa = emp;
   state.client = {
     empresa: emp,
@@ -437,6 +536,13 @@ function runAnalysis() {
 function getFinalidade() {
   const sel = document.getElementById('f-finalidade');
   return sel.options[sel.selectedIndex].text;
+}
+
+function updateSaveStatus(message, tone = 'info') {
+  const statusEl = document.getElementById('save-status');
+  if (!statusEl) return;
+  statusEl.textContent = message;
+  statusEl.style.color = tone === 'good' ? '#10b981' : tone === 'warn' ? '#f59e0b' : '#8fa3c0';
 }
 
 // ── RATIO TABLES ──────────────────────────────────────────────────
@@ -847,8 +953,27 @@ function exportExcel() {
   URL.revokeObjectURL(url);
 }
 
+function bindFinancialInputs() {
+  const inputIds = [
+    'f-cash','f-equivalents','f-clients','f-inventory','f-other-current-assets','f-fixed-assets','f-intangible-assets','f-accumulated-depreciation',
+    'f-suppliers','f-short-term-loans','f-long-term-loans','f-taxes','f-provisions','f-other-liabilities','f-share-capital','f-reserves','f-retained-earnings','f-net-income',
+    'f-revenue','f-cogs','f-personnel-costs','f-opex','f-ebitda','f-depreciation','f-ebit','f-financial-result','f-taxes-paid'
+  ];
+
+  inputIds.forEach(id => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener('input', () => {
+      state.financials = extractFinancialStateFromForm();
+      saveClientState();
+      buildRatioTables();
+    });
+  });
+}
+
 // ── INIT ──────────────────────────────────────────────────────────
-setInitialFormState();
+applyPersistedFormValues();
+bindFinancialInputs();
 setTimeout(() => {
   runAnalysis();
   buildCharts();
