@@ -407,7 +407,143 @@ function buildRatioTables() {
   });
 }
 
-// ── NAV ──────────────────────────────────────────────────────────
+function buildRiskAssessment() {
+  const ratios = buildComputedRatios();
+  const liquidityScore = (() => {
+    const list = ratios.liquidez;
+    const score = list.reduce((acc, item) => {
+      if (item.status === 'good') return acc + 20;
+      if (item.status === 'warn') return acc + 10;
+      if (item.status === 'bad') return acc + 5;
+      return acc + 15;
+    }, 0);
+    return Math.min(100, Math.max(0, score / list.length));
+  })();
+
+  const leverageScore = (() => {
+    const list = ratios.endividamento;
+    const score = list.reduce((acc, item) => {
+      if (item.status === 'good') return acc + 20;
+      if (item.status === 'warn') return acc + 10;
+      return acc + 5;
+    }, 0);
+    return Math.min(100, Math.max(0, score / list.length));
+  })();
+
+  const profitabilityScore = (() => {
+    const list = ratios.rentabilidade;
+    const score = list.reduce((acc, item) => {
+      if (item.status === 'good') return acc + 20;
+      if (item.status === 'warn') return acc + 10;
+      return acc + 5;
+    }, 0);
+    return Math.min(100, Math.max(0, score / list.length));
+  })();
+
+  const efficiencyScore = (() => {
+    const list = ratios.eficiencia;
+    const score = list.reduce((acc, item) => {
+      if (item.status === 'good') return acc + 20;
+      if (item.status === 'warn') return acc + 10;
+      if (item.status === 'bad') return acc + 5;
+      return acc + 15;
+    }, 0);
+    return Math.min(100, Math.max(0, score / list.length));
+  })();
+
+  const weightedScore = (liquidityScore * 0.30) + (leverageScore * 0.25) + (profitabilityScore * 0.25) + (efficiencyScore * 0.20);
+  const score = Math.round(Math.max(0, Math.min(100, weightedScore)));
+
+  const rating = (() => {
+    if (score >= 85) return 'AA';
+    if (score >= 75) return 'A';
+    if (score >= 65) return 'BBB';
+    if (score >= 55) return 'BB';
+    if (score >= 45) return 'B';
+    return 'CCC';
+  })();
+
+  const decision = (() => {
+    if (score >= 75) return 'approved';
+    if (score >= 60) return 'conditional';
+    return 'rejected';
+  })();
+
+  const debtExposure = Number(state.financials.totalDebt || 0) / Math.max(1, Number(state.financials.totalAssets || 1));
+  const pd = Math.min(12, Math.max(1.2, 0.8 + (100 - score) / 12 + debtExposure * 15));
+  const lgd = Math.min(65, Math.max(25, 42 + (100 - score) / 8));
+  const ead = Number(state.client.montante || 0) * 1000000;
+  const ecl = ((pd * lgd * ead) / 10000) / 1000000;
+
+  return {
+    score,
+    rating,
+    decision,
+    pd: Number(pd.toFixed(1)),
+    lgd: Number(lgd.toFixed(0)),
+    ead: Number(ead / 1000000).toFixed(0),
+    ecl: Number(ecl.toFixed(1)),
+    riskLabel: decision === 'approved' ? 'Baixo risco' : decision === 'conditional' ? 'Risco moderado' : 'Risco elevado'
+  };
+}
+
+function updateRiskWidgets() {
+  const risk = buildRiskAssessment();
+  state.score = risk.score;
+  state.rating = risk.rating;
+  state.pd = risk.pd;
+  state.lgd = risk.lgd;
+  state.ead = Number(risk.ead);
+  state.ecl = risk.ecl;
+
+  const scoreEls = ['score-value', 'score-kpi', 'score-output'];
+  scoreEls.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = `${risk.score}/100`;
+  });
+
+  const ratingEls = ['rating-value', 'rating-label'];
+  ratingEls.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = risk.rating;
+  });
+
+  const pdEls = ['pd-value', 'pd-output'];
+  pdEls.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = `${risk.pd}%`;
+  });
+
+  const eclEls = ['ecl-value', 'ecl-output'];
+  eclEls.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = `AOA ${risk.ecl.toLocaleString('pt-AO')}M`;
+  });
+
+  const decisionBanner = document.querySelector('.decision-banner');
+  if (decisionBanner) {
+    decisionBanner.classList.remove('approved', 'conditional', 'rejected');
+    decisionBanner.classList.add(risk.decision === 'approved' ? 'approved' : risk.decision === 'conditional' ? 'conditional' : 'rejected');
+  }
+
+  const decisionTitle = document.getElementById('decision-title');
+  if (decisionTitle) {
+    if (risk.decision === 'approved') decisionTitle.textContent = 'APROVADO';
+    else if (risk.decision === 'conditional') decisionTitle.textContent = 'APROVADO COM CONDIÇÕES';
+    else decisionTitle.textContent = 'REJEITADO';
+  }
+
+  const riskStateEl = document.getElementById('risk-state');
+  if (riskStateEl) riskStateEl.textContent = risk.riskLabel;
+
+  const riskBadge = document.getElementById('risk-badge');
+  if (riskBadge) riskBadge.textContent = risk.rating;
+
+  const dscrEl = document.getElementById('dscr-value');
+  if (dscrEl) dscrEl.textContent = `${(safeRatio(state.financials.ebitda, state.financials.totalDebt || 1) || 1.5).toFixed(2)}x`;
+}
+
+// ── NAV ───────────────────────────────────────────────────────────
 function showSection(id) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
   document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
@@ -512,12 +648,18 @@ function runAnalysis() {
     finalidade: document.getElementById('f-finalidade').value
   };
   state.analysed = true;
-  document.getElementById('d-empresa-name').textContent = emp;
-  document.getElementById('d-limite').textContent = 'AOA ' + Math.round(montante * 0.84) + ' Mio';
-  document.getElementById('d-prazo-text').textContent = prazo + ' meses · ' + getFinalidade();
-  document.getElementById('demo-alert').style.display = 'block';
+
+  const empresaNode = document.getElementById('d-empresa-name');
+  if (empresaNode) empresaNode.textContent = emp;
+  const limiteNode = document.getElementById('d-limite');
+  if (limiteNode) limiteNode.textContent = 'AOA ' + Math.round(montante * 0.84) + ' Mio';
+  const prazoNode = document.getElementById('d-prazo-text');
+  if (prazoNode) prazoNode.textContent = prazo + ' meses · ' + getFinalidade();
+  const demoAlert = document.getElementById('demo-alert');
+  if (demoAlert) demoAlert.style.display = 'block';
 
   saveClientState();
+  updateRiskWidgets();
   buildRatioTables();
   buildScoreBreakdown();
   buildComplianceChecks();
@@ -775,7 +917,6 @@ function buildCharts() {
   const dark = 'rgba(255,255,255,0.07)';
   const textColor = '#8fa3c0';
 
-  // RADAR
   const radarCtx = document.getElementById('radarChart');
   if (radarCtx && !state.charts.radar) {
     state.charts.radar = new Chart(radarCtx, {
@@ -816,7 +957,6 @@ function buildCharts() {
     });
   }
 
-  // TREND
   const trendCtx = document.getElementById('trendChart');
   if (trendCtx && !state.charts.trend) {
     state.charts.trend = new Chart(trendCtx, {
@@ -856,7 +996,6 @@ function buildCharts() {
     });
   }
 
-  // CAPITAL STRUCTURE
   const capCtx = document.getElementById('capitalChart');
   if (capCtx && !state.charts.cap) {
     state.charts.cap = new Chart(capCtx, {
@@ -967,6 +1106,7 @@ function bindFinancialInputs() {
       state.financials = extractFinancialStateFromForm();
       saveClientState();
       buildRatioTables();
+      updateRiskWidgets();
     });
   });
 }
